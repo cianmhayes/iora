@@ -1,0 +1,2 @@
+[workspace]
+members = ["iora", "iora_cli", "iora_service"]
