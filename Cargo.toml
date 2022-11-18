@@ -1,2 +1,5 @@
 [workspace]
 members = ["iora", "iora_cli", "iora_service"]
+
+[profile.release]
+lto = true

@@ -1,9 +1,9 @@
+use crate::regexes;
 use lazy_static::lazy_static;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
 use std::str::FromStr;
-use crate::regexes;
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Deserialize, Serialize, Hash)]
 pub struct SemVer {
@@ -14,10 +14,9 @@ pub struct SemVer {
     pub buildmetadata: Option<String>,
 }
 
-impl std::fmt::Display for SemVer {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
+impl ToString for SemVer {
+    fn to_string(&self) -> String {
+        format!(
             "{}.{}.{}{}{}",
             self.major,
             self.minor,

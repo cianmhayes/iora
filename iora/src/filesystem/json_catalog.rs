@@ -1,8 +1,8 @@
-use crate::{AssetCatalog, AssetDescriptor, AssetQuery, ListAssetsCacheError, ListAssetsError};
-
 use std::fs::File;
 use std::io::{BufReader, BufWriter};
 use std::path::{Path, PathBuf};
+
+use crate::{AssetCatalog, AssetDescriptor, AssetQuery, ListAssetsCacheError, ListAssetsError};
 
 pub struct JsonFileAssetCatalog {
     storage_path: PathBuf,

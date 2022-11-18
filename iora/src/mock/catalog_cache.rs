@@ -34,11 +34,22 @@ impl AssetCatalog for MockAssetCatalogCache {
                 return Ok(entry.descriptor.clone());
             }
         }
-        return Err(ListAssetsError::NoResults);
+        return Ok(vec![]);
     }
 }
 
 impl ListAssetsCache for MockAssetCatalogCache {
+    fn has_cache_entry(&self, query: &AssetQuery) -> bool {
+        match self.descriptors.borrow().get(query) {
+            Some(entry) => {
+                SystemTime::now()
+                    .duration_since(entry.last_modified)
+                    .unwrap_or(self.max_age)
+                    < self.max_age
+            }
+            None => false,
+        }
+    }
     fn save(&self, descriptor: &Vec<AssetDescriptor>, query: &AssetQuery) {
         let mut cache_map = self.descriptors.borrow_mut();
         cache_map.insert(

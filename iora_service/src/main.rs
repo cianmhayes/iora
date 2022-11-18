@@ -10,10 +10,21 @@ use axum::{
 };
 use bb8::ManageConnection;
 use iora::{
-    AssetCatalog, AssetDescriptor, MockAssetCatalog, NameConstraint, SemVer, VersionConstraint, AssetQuery,
+    AssetCatalog, AssetDescriptor, MockAssetCatalog, SemVer, AssetQuery, ConstraintParsingError,
 };
 use std::sync::Arc;
 use std::{net::SocketAddr, str::FromStr};
+
+
+use clap::Parser;
+
+#[derive(Parser, Debug)]
+#[command(name = "iora")]
+#[command(bin_name = "iora_service")]
+struct IoraServiceParameters {
+    #[arg(short, long, value_name = "PORT", required = true)]
+    port: u16,
+}
 
 struct State {
     catalog_connection_pool: bb8::Pool<AssetCatalogConnectionManager>,
@@ -21,6 +32,7 @@ struct State {
 
 #[tokio::main]
 async fn main() {
+    let args = IoraServiceParameters::parse();
     let state = Arc::new(State {
         catalog_connection_pool: bb8::Pool::builder()
             .build(AssetCatalogConnectionManager {})
@@ -30,7 +42,7 @@ async fn main() {
     let app = Router::new()
         .route("/assets", get(list_assets))
         .layer(Extension(state));
-    let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
+    let addr = SocketAddr::from(([0, 0, 0, 0], args.port));
     println!("Listening on {}", addr);
     axum::Server::bind(&addr)
         .serve(app.into_make_service())
@@ -45,9 +57,7 @@ struct ListAssetParameters {
 }
 
 #[derive(Debug)]
-enum AssetCatalogConnectionError {
-    NotImplemented,
-}
+enum AssetCatalogConnectionError {}
 
 struct AssetCatalogConnectionManager {}
 
@@ -57,7 +67,7 @@ impl ManageConnection for AssetCatalogConnectionManager {
     type Error = AssetCatalogConnectionError;
 
     async fn connect(&self) -> Result<Self::Connection, Self::Error> {
-        let mut mock = MockAssetCatalog::new();
+        let mock = MockAssetCatalog::new();
         mock.descriptors.borrow_mut().push(AssetDescriptor::new(
             "asset_en",
             &SemVer::from_str("1.0.0-beta+buildinfo").unwrap(),
@@ -81,26 +91,39 @@ impl ManageConnection for AssetCatalogConnectionManager {
         Ok(mock)
     }
 
-    async fn is_valid(&self, conn: &mut Self::Connection) -> Result<(), Self::Error> {
+    async fn is_valid(&self, _conn: &mut Self::Connection) -> Result<(), Self::Error> {
         Ok(())
     }
 
-    fn has_broken(&self, conn: &mut Self::Connection) -> bool {
+    fn has_broken(&self, _conn: &mut Self::Connection) -> bool {
         false
     }
 }
 
 enum ListAssetsServiceError {
-    BadNameConstraint,
-    BadVersionConstraint,
+    MissingNameConstraint,
+    MalformedNameConstraint,
+    MalformedVersionConstraint,
     QueryFailed,
+}
+
+impl From<ConstraintParsingError> for ListAssetsServiceError {
+    fn from(e: ConstraintParsingError) -> Self {
+        match e {
+            ConstraintParsingError::EmptyNameConstraint => Self::MissingNameConstraint,
+            ConstraintParsingError::UnrecognizedNameConstraintStructure => Self::MalformedNameConstraint,
+            ConstraintParsingError::EmptyVersionConstraint => Self::MalformedVersionConstraint,
+            ConstraintParsingError::UnrecognizedVersionConstraintStructure => Self::MalformedVersionConstraint
+        }
+    }
 }
 
 impl IntoResponse for ListAssetsServiceError {
     fn into_response(self) -> axum::response::Response {
         let response = {match self {
-            ListAssetsServiceError::BadNameConstraint => (StatusCode::BAD_REQUEST, "Missing or bad name constraint"),
-            ListAssetsServiceError::BadVersionConstraint => (StatusCode::BAD_REQUEST, "Missing or bad version constraint"),
+            ListAssetsServiceError::MissingNameConstraint => (StatusCode::BAD_REQUEST, "Missing name constraint"),
+            ListAssetsServiceError::MalformedNameConstraint => (StatusCode::BAD_REQUEST, "Bad name constraint"),
+            ListAssetsServiceError::MalformedVersionConstraint => (StatusCode::BAD_REQUEST, "Bad version constraint"),
             ListAssetsServiceError::QueryFailed => (StatusCode::INTERNAL_SERVER_ERROR, "Something went wrong")
         }};
         response.into_response()
@@ -112,21 +135,16 @@ async fn list_assets(
     Extension(state): Extension<Arc<State>>,
 ) -> Result<Json<Vec<iora::AssetDescriptor>>, ListAssetsServiceError> {
     let catalog = state.catalog_connection_pool.get().await;
+    let query = AssetQuery::new_from_strings(&q.name, &q.version);
     match (
         catalog,
-        NameConstraint::from_str(&q.name),
-        &q.version.map(|v| VersionConstraint::from_str(&v)),
+        query,
     ) {
-        (Err(catalog_err), _, _) => Err(ListAssetsServiceError::QueryFailed),
-        (Ok(catalog), Ok(nc), Some(Ok(vc))) => match catalog.list_assets(&(&nc, vc).into()) {
+        (Err(_), _) => Err(ListAssetsServiceError::QueryFailed),
+        (Ok(catalog), Ok(query)) => match catalog.list_assets(&query) {
             Ok(result) => Ok(Json::from(result)),
             _ => Err(ListAssetsServiceError::QueryFailed),
         },
-        (Ok(catalog), Ok(nc), None) => match catalog.list_assets(&(nc, None).into()) {
-            Ok(result) => Ok(Json::from(result)),
-            _ => Err(ListAssetsServiceError::QueryFailed),
-        },
-        (_, Err(e), _) => Err(ListAssetsServiceError::BadNameConstraint),
-        (_, _, Some(Err(e))) => Err(ListAssetsServiceError::BadVersionConstraint),
+        (_, Err(e)) => Err(e.into()),
     }
 }

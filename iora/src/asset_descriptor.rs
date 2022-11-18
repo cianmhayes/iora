@@ -40,10 +40,6 @@ impl AssetDescriptor {
         });
         let flattened: Vec<AssetDescriptor> =
             algo::reduce_to_max_by_key(&grouped, |ad| &ad.version);
-        if flattened.len() == 0 {
-            Err(ListAssetsError::NoResults)
-        } else {
-            Ok(flattened)
-        }
+        Ok(flattened)
     }
 }

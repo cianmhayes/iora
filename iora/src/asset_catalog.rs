@@ -2,8 +2,7 @@ use crate::{AssetDescriptor, AssetQuery};
 
 #[derive(Debug)]
 pub enum ListAssetsError {
-    NoResults,
-    InvalidNameConstraint,
+    CatalogNotFound,
     QueryFailed,
 }
 
@@ -20,6 +19,7 @@ pub enum ListAssetsCacheError {
 }
 
 pub trait ListAssetsCache {
+    fn has_cache_entry(&self, query: &AssetQuery) -> bool;
     fn save(
         &self,
         descriptor: &Vec<AssetDescriptor>,
@@ -58,9 +58,11 @@ where
         &self,
         query: &AssetQuery,
     ) -> Result<Vec<AssetDescriptor>, ListAssetsError> {
-        let cached_result = self.cache.list_assets(query);
-        if let Ok(list) = cached_result {
-            return Ok(list);
+        if self.cache.has_cache_entry(query) {
+            let cached_result = self.cache.list_assets(query);
+            if let Ok(list) = cached_result {
+                return Ok(list);
+            }
         }
         match self
             .remote_catalog

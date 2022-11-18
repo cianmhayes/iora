@@ -1,11 +1,10 @@
 use std::collections::HashMap;
-use std::time::{Duration, SystemTime};
-
-use crate::{AssetCatalog, AssetDescriptor, AssetQuery, ListAssetsCache, ListAssetsError};
-
 use std::fs::File;
 use std::io::{BufReader, BufWriter};
 use std::path::{Path, PathBuf};
+use std::time::{Duration, SystemTime};
+
+use crate::{AssetCatalog, AssetDescriptor, AssetQuery, ListAssetsCache, ListAssetsError};
 
 #[derive(Debug, serde::Deserialize, serde::Serialize)]
 struct CacheEntry {
@@ -28,16 +27,15 @@ impl JsonFileAssetCatalogCache {
     fn read_from_file(&self) -> HashMap<AssetQuery, CacheEntry> {
         if let Ok(file) = File::open(&self.storage_path) {
             let reader = BufReader::new(file);
-            if let Ok(descriptors) = serde_json::from_reader::<_, HashMap<AssetQuery, CacheEntry>>(reader) {
+            if let Ok(descriptors) =
+                serde_json::from_reader::<_, HashMap<AssetQuery, CacheEntry>>(reader)
+            {
                 return descriptors;
             }
         }
         return HashMap::new();
     }
-    fn save_to_file(
-        &self,
-        descriptors: HashMap<AssetQuery, CacheEntry>,
-    ) {
+    fn save_to_file(&self, descriptors: HashMap<AssetQuery, CacheEntry>) {
         if let Ok(file) = File::options()
             .create(true)
             .write(true)
@@ -60,11 +58,23 @@ impl AssetCatalog for JsonFileAssetCatalogCache {
                 return Ok(entry.descriptor.clone());
             }
         }
-        return Err(ListAssetsError::NoResults);
+        return Ok(vec![]);
     }
 }
 
 impl ListAssetsCache for JsonFileAssetCatalogCache {
+    fn has_cache_entry(&self, query: &AssetQuery) -> bool {
+        match self.read_from_file().get(query) {
+            Some(entry) => {
+                SystemTime::now()
+                    .duration_since(entry.last_modified)
+                    .unwrap_or(self.max_age)
+                    < self.max_age
+            }
+            None => false,
+        }
+    }
+
     fn save(&self, descriptor: &Vec<AssetDescriptor>, query: &AssetQuery) {
         let mut cache_map = self.read_from_file();
         cache_map.insert(

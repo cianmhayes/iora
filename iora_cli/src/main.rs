@@ -1,15 +1,15 @@
 use std::path::{Path, PathBuf};
-use std::str::FromStr;
 use std::time::Duration;
 
 use clap::{Parser, Subcommand};
+use iora::{AssetQuery, ConstraintParsingError, ListAssetsError};
 
 #[derive(Parser, Debug)]
 #[command(name = "iora")]
 #[command(bin_name = "iora_cli")]
 struct IoraCli {
     #[command(subcommand)]
-    command:IoraCommands,
+    command: IoraCommands,
 }
 
 #[derive(Debug, Subcommand)]
@@ -23,9 +23,33 @@ enum IoraCommands {
 #[derive(clap::Args, Debug)]
 #[command(about = "Find available packages.")]
 struct Find {
-    /// Name constraint description.
+    /// A pattern describing the range of asset names of interest.
     #[arg(short, long, value_name = "NAME_CONSTRAINT", required = true)]
     name: String,
+    /// A pattern describing the range of asset versions of interest.
+    #[arg(short, long, value_name = "VERSION_CONSTRAINT", required = true)]
+    version: Option<String>,
+}
+
+enum IoraCliError {
+    FindArgumentError(ConstraintParsingError),
+    FindError(ListAssetsError),
+    NotImplemented,
+}
+
+impl Find {
+    fn run(&self, catalog: &Box<dyn iora::AssetCatalog>) -> Result<(), IoraCliError> {
+        match AssetQuery::new_from_strings(&self.name, &self.version) {
+            Ok(query) => match catalog.list_assets(&query) {
+                Ok(results) => {
+                    print_asset_descriptor_table(&results);
+                    Ok(())
+                }
+                Err(e) => Err(IoraCliError::FindError(e)),
+            },
+            Err(e) => Err(IoraCliError::FindArgumentError(e)),
+        }
+    }
 }
 
 #[derive(clap::Args, Debug)]
@@ -37,32 +61,20 @@ fn make_asset_catalog(file_path: &Path) -> Box<dyn iora::AssetCatalog> {
         file_path,
         Duration::from_nanos(1),
     ));
-    let remote = Box::new(iora::MockAssetCatalog::new());
-    remote
-        .descriptors
-        .borrow_mut()
-        .push(iora::AssetDescriptor::new(
-            "asset.a",
-            &iora::SemVer::from_str("1.0.0").unwrap(),
-            "",
-        ));
-    remote
-        .descriptors
-        .borrow_mut()
-        .push(iora::AssetDescriptor::new(
-            "asset.a",
-            &iora::SemVer::from_str("2.0.0").unwrap(),
-            "",
-        ));
-    remote
-        .descriptors
-        .borrow_mut()
-        .push(iora::AssetDescriptor::new(
-            "asset.a",
-            &iora::SemVer::from_str("2.0.0-beta").unwrap(),
-            "",
-        ));
+    let remote = Box::new(iora::HttpAssetCatalog::new("http://localhost:3000"));
     Box::new(iora::CachingAssetCatalog::new(cache, remote))
+}
+
+fn print_asset_descriptor_table(descriptors: &Vec<iora::AssetDescriptor>) {
+    println!("{0: <32} {1: <32} {2: <32}", "Name", "Version", "Hash");
+    for ad in descriptors {
+        println!(
+            "{0: <32} {1: <32} {2: <32}",
+            ad.name,
+            ad.version.to_string(),
+            ad.content_hash
+        );
+    }
 }
 
 fn main() {
@@ -71,24 +83,8 @@ fn main() {
     cache_path.push(PathBuf::from(".cache"));
     cache_path.push(PathBuf::from("descriptors.json"));
     let catalog = make_asset_catalog(&cache_path);
-    match args.command {
-        IoraCommands::Find(f) => {
-            match catalog.list_assets(&iora::NameConstraint::Contains(f.name).into()) {
-                Ok(results) => {
-                    println!(
-                        "{0: <32} {1: <32} {2: <32}",
-                        "Name", "Version", "Hash"
-                    );
-                    for ad in results {
-                        println!(
-                            "{0: <32} {1: <32} {2: <32}",
-                            ad.name, ad.version, ad.content_hash
-                        );
-                    }
-                },
-                Err(e) => {}
-            }
-        },
-        _ => panic!("Not implemented")
-    }
+    let command_result = match args.command {
+        IoraCommands::Find(f) => f.run(&catalog),
+        _ => Err(IoraCliError::NotImplemented),
+    };
 }

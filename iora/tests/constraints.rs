@@ -115,17 +115,17 @@ fn name_constraint_from_str() {
     }
 
     match NameConstraint::from_str("*b") {
-        Err(ConstraintParsingError::FailedToParseNameConstraint) => {},
+        Err(ConstraintParsingError::UnrecognizedVersionConstraintStructure) => {},
         r => panic!("Unexpected result: {:?}", r)
     }
 
     match NameConstraint::from_str("**") {
-        Err(ConstraintParsingError::FailedToParseNameConstraint) => {},
+        Err(ConstraintParsingError::UnrecognizedVersionConstraintStructure) => {},
         r => panic!("Unexpected result: {:?}", r)
     }
 
     match NameConstraint::from_str("") {
-        Err(ConstraintParsingError::FailedToParseNameConstraint) => {},
+        Err(ConstraintParsingError::UnrecognizedVersionConstraintStructure) => {},
         r => panic!("Unexpected result: {:?}", r)
     }
 }
