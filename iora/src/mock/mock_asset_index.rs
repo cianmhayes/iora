@@ -1,20 +1,20 @@
 use std::cell::RefCell;
 
-use crate::{AssetCatalog, AssetDescriptor, AssetQuery, ListAssetsError};
+use crate::{AssetIndex, AssetDescriptor, AssetQuery, ListAssetsError};
 
-pub struct MockAssetCatalog {
+pub struct MockAssetIndex {
     pub descriptors: RefCell<Vec<AssetDescriptor>>,
 }
 
-impl Default for MockAssetCatalog {
+impl Default for MockAssetIndex {
     fn default() -> Self {
-        MockAssetCatalog {
+        MockAssetIndex {
             descriptors: RefCell::new(vec![]),
         }
     }
 }
 
-impl AssetCatalog for MockAssetCatalog {
+impl AssetIndex for MockAssetIndex {
     fn list_assets(&self, query: &AssetQuery) -> Result<Vec<AssetDescriptor>, ListAssetsError> {
         AssetDescriptor::filter_to_matching(&self.descriptors.borrow(), query)
     }

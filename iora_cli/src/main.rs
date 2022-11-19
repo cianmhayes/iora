@@ -45,7 +45,7 @@ enum IoraCliError {
 }
 
 impl Find {
-    fn run(&self, catalog: &impl iora::AssetCatalog) -> Result<(), IoraCliError> {
+    fn run(&self, catalog: &impl iora::AssetIndex) -> Result<(), IoraCliError> {
         match AssetQuery::new_from_strings(&self.name, &self.version) {
             Ok(query) => match catalog.list_assets(&query) {
                 Ok(results) => {
@@ -63,13 +63,13 @@ impl Find {
 #[command(about = "Fetch the desired package.")]
 struct Fetch {}
 
-fn make_asset_catalog(file_path: &Path) -> impl iora::AssetCatalog {
-    let cache = Box::new(iora::JsonFileAssetCatalogCache::new(
+fn make_asset_index(file_path: &Path) -> impl iora::AssetIndex {
+    let cache = Box::new(iora::JsonFileAssetIndexCache::new(
         file_path,
         Duration::from_nanos(1),
     ));
-    let remote = Box::new(iora::HttpAssetCatalog::new("http://localhost:3001"));
-    iora::CachingAssetCatalog::new(cache, remote)
+    let remote = Box::new(iora::HttpAssetIndex::new("http://localhost:3001"));
+    iora::CachingAssetIndex::new(cache, remote)
 }
 
 fn print_asset_descriptor_table(descriptors: &Vec<iora::AssetDescriptor>) {
@@ -107,7 +107,7 @@ fn main() {
         }
     }
     cache_path.push(PathBuf::from("descriptors.json"));
-    let catalog = make_asset_catalog(&cache_path);
+    let catalog = make_asset_index(&cache_path);
     match args.command {
         IoraCommands::Find(f) => match f.run(&catalog) {
             Ok(()) => {}

@@ -3,7 +3,7 @@ use axum::response::IntoResponse;
 use axum::{async_trait, extract::Extension, extract::Query, response::Json, routing::get, Router};
 use bb8::ManageConnection;
 use iora::{
-    AssetCatalog, AssetDescriptor, AssetQuery, ConstraintParsingError, MockAssetCatalog, SemVer,
+    AssetIndex, AssetDescriptor, AssetQuery, ConstraintParsingError, MockAssetIndex, SemVer,
 };
 use std::sync::Arc;
 use std::{net::SocketAddr, str::FromStr};
@@ -19,7 +19,7 @@ struct IoraServiceParameters {
 }
 
 struct State {
-    catalog_connection_pool: bb8::Pool<AssetCatalogConnectionManager>,
+    catalog_connection_pool: bb8::Pool<AssetIndexConnectionManager>,
 }
 
 #[tokio::main]
@@ -27,7 +27,7 @@ async fn main() {
     let args = IoraServiceParameters::parse();
     let state = Arc::new(State {
         catalog_connection_pool: bb8::Pool::builder()
-            .build(AssetCatalogConnectionManager {})
+            .build(AssetIndexConnectionManager {})
             .await
             .unwrap(),
     });
@@ -49,17 +49,17 @@ struct ListAssetParameters {
 }
 
 #[derive(Debug)]
-enum AssetCatalogConnectionError {}
+enum AssetIndexConnectionError {}
 
-struct AssetCatalogConnectionManager {}
+struct AssetIndexConnectionManager {}
 
 #[async_trait]
-impl ManageConnection for AssetCatalogConnectionManager {
-    type Connection = iora::MockAssetCatalog;
-    type Error = AssetCatalogConnectionError;
+impl ManageConnection for AssetIndexConnectionManager {
+    type Connection = iora::MockAssetIndex;
+    type Error = AssetIndexConnectionError;
 
     async fn connect(&self) -> Result<Self::Connection, Self::Error> {
-        let mock = MockAssetCatalog::default();
+        let mock = MockAssetIndex::default();
         mock.descriptors.borrow_mut().push(AssetDescriptor::new(
             "asset_en",
             &SemVer::from_str("1.0.0-beta+buildinfo").unwrap(),

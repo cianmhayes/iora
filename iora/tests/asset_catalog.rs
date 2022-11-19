@@ -1,14 +1,14 @@
 use iora::{
-    AssetCatalog, AssetDescriptor, AssetQuery, CachingAssetCatalog, MockAssetCatalog,
-    MockAssetCatalogCache, SemVer,
+    AssetIndex, AssetDescriptor, AssetQuery, CachingAssetIndex, MockAssetIndex,
+    MockAssetIndexCache, SemVer,
 };
 use std::str::FromStr;
 use std::time::Duration;
 
 #[test]
 fn list() {
-    let cache = Box::new(MockAssetCatalogCache::new(Duration::from_secs(1)));
-    let remote = Box::new(MockAssetCatalog::default());
+    let cache = Box::new(MockAssetIndexCache::new(Duration::from_secs(1)));
+    let remote = Box::new(MockAssetIndex::default());
     remote.descriptors.borrow_mut().push(AssetDescriptor::new(
         "asset_name",
         &SemVer::from_str("2.45.6").unwrap(),
@@ -24,7 +24,7 @@ fn list() {
         &SemVer::from_str("3.45.7").unwrap(),
         "asset_hash",
     ));
-    let catalog = CachingAssetCatalog::new(cache, remote);
+    let catalog = CachingAssetIndex::new(cache, remote);
 
     let result = catalog
         .list_assets(&AssetQuery::from((

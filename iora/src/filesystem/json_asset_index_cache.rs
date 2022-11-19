@@ -8,7 +8,7 @@ use std::time::{Duration, SystemTime};
 
 use tracing::{event, instrument, Level};
 
-use crate::{AssetCatalog, AssetDescriptor, AssetQuery, ListAssetsCache, ListAssetsError};
+use crate::{AssetIndex, AssetDescriptor, AssetQuery, ListAssetsCache, ListAssetsError};
 
 #[derive(Debug, serde::Deserialize, serde::Serialize)]
 struct CacheEntry {
@@ -18,16 +18,16 @@ struct CacheEntry {
 }
 
 #[derive(Debug)]
-pub struct JsonFileAssetCatalogCache {
+pub struct JsonFileAssetIndexCache {
     storage_path: PathBuf,
     max_age: Duration,
 }
 
-impl JsonFileAssetCatalogCache {
+impl JsonFileAssetIndexCache {
     #[instrument]
     pub fn new(file_path: &Path, max_age: Duration) -> Self {
         event!(Level::INFO, file_path_exists= file_path.exists());
-        JsonFileAssetCatalogCache {
+        JsonFileAssetIndexCache {
             storage_path: file_path.to_path_buf(),
             max_age,
         }
@@ -65,7 +65,7 @@ impl JsonFileAssetCatalogCache {
     }
 }
 
-impl AssetCatalog for JsonFileAssetCatalogCache {
+impl AssetIndex for JsonFileAssetIndexCache {
     fn list_assets(&self, query: &AssetQuery) -> Result<Vec<AssetDescriptor>, ListAssetsError> {        
         if let Some(entry) = self.read_from_file().get(&Self::cache_key(query)) {
             if SystemTime::now()
@@ -80,7 +80,7 @@ impl AssetCatalog for JsonFileAssetCatalogCache {
     }
 }
 
-impl ListAssetsCache for JsonFileAssetCatalogCache {
+impl ListAssetsCache for JsonFileAssetIndexCache {
     fn has_cache_entry(&self, query: &AssetQuery) -> bool {
         
         match self.read_from_file().get(&Self::cache_key(query)) {

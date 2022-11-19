@@ -1,5 +1,5 @@
 mod algo;
-mod asset_catalog;
+mod asset_index;
 mod asset_descriptor;
 mod constraints;
 mod filesystem;
@@ -8,12 +8,12 @@ mod mock;
 mod regexes;
 mod semver;
 
-pub use asset_catalog::{
-    AssetCatalog, CachingAssetCatalog, ListAssetsCache, ListAssetsCacheError, ListAssetsError,
+pub use asset_index::{
+    AssetIndex, CachingAssetIndex, ListAssetsCache, ListAssetsCacheError, ListAssetsError,
 };
 pub use asset_descriptor::AssetDescriptor;
 pub use constraints::{AssetQuery, ConstraintParsingError, NameConstraint, VersionConstraint};
-pub use filesystem::JsonFileAssetCatalogCache;
-pub use http::HttpAssetCatalog;
-pub use mock::{MockAssetCatalog, MockAssetCatalogCache};
+pub use filesystem::JsonFileAssetIndexCache;
+pub use http::HttpAssetIndex;
+pub use mock::{MockAssetIndex, MockAssetIndexCache};
 pub use semver::{SemVer, SemVerParseEror};

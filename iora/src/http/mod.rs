@@ -1,3 +1,3 @@
-mod http_catalog;
+mod http_asset_index;
 
-pub use http_catalog::HttpAssetCatalog;
+pub use http_asset_index::HttpAssetIndex;

@@ -6,7 +6,7 @@ pub enum ListAssetsError {
     QueryFailed,
 }
 
-pub trait AssetCatalog {
+pub trait AssetIndex {
     fn list_assets(&self, query: &AssetQuery) -> Result<Vec<AssetDescriptor>, ListAssetsError>;
 }
 
@@ -20,29 +20,29 @@ pub trait ListAssetsCache {
     fn save(&self, descriptor: &[AssetDescriptor], query: &AssetQuery);
 }
 
-pub struct CachingAssetCatalog<TCache, TRemote>
+pub struct CachingAssetIndex<TCache, TRemote>
 where
-    TCache: AssetCatalog + ListAssetsCache,
-    TRemote: AssetCatalog,
+    TCache: AssetIndex + ListAssetsCache,
+    TRemote: AssetIndex,
 {
     cache: Box<TCache>,
     remote: Box<TRemote>,
 }
 
-impl<TCache, TRemote> CachingAssetCatalog<TCache, TRemote>
+impl<TCache, TRemote> CachingAssetIndex<TCache, TRemote>
 where
-    TCache: AssetCatalog + ListAssetsCache,
-    TRemote: AssetCatalog,
+    TCache: AssetIndex + ListAssetsCache,
+    TRemote: AssetIndex,
 {
     pub fn new(cache: Box<TCache>, remote: Box<TRemote>) -> Self {
-        CachingAssetCatalog { cache, remote }
+        CachingAssetIndex { cache, remote }
     }
 }
 
-impl<TCache, TRemote> AssetCatalog for CachingAssetCatalog<TCache, TRemote>
+impl<TCache, TRemote> AssetIndex for CachingAssetIndex<TCache, TRemote>
 where
-    TCache: AssetCatalog + ListAssetsCache,
-    TRemote: AssetCatalog,
+    TCache: AssetIndex + ListAssetsCache,
+    TRemote: AssetIndex,
 {
     fn list_assets(&self, query: &AssetQuery) -> Result<Vec<AssetDescriptor>, ListAssetsError> {
         if self.cache.has_cache_entry(query) {

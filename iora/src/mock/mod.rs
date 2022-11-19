@@ -1,5 +1,5 @@
-mod catalog;
-mod catalog_cache;
+mod mock_asset_index;
+mod mock_asset_index_cache;
 
-pub use catalog::MockAssetCatalog;
-pub use catalog_cache::MockAssetCatalogCache;
+pub use mock_asset_index::MockAssetIndex;
+pub use mock_asset_index_cache::MockAssetIndexCache;

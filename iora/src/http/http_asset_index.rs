@@ -1,12 +1,12 @@
-use crate::{AssetCatalog, AssetDescriptor, AssetQuery, ListAssetsError};
+use crate::{AssetIndex, AssetDescriptor, AssetQuery, ListAssetsError};
 
-pub struct HttpAssetCatalog {
+pub struct HttpAssetIndex {
     target_host: String,
 }
 
-impl HttpAssetCatalog {
+impl HttpAssetIndex {
     pub fn new(target_host: &str) -> Self {
-        HttpAssetCatalog {
+        HttpAssetIndex {
             target_host: if target_host.starts_with("http://")
                 || target_host.starts_with("https://")
             {
@@ -18,7 +18,7 @@ impl HttpAssetCatalog {
     }
 }
 
-impl AssetCatalog for HttpAssetCatalog {
+impl AssetIndex for HttpAssetIndex {
     fn list_assets(&self, query: &AssetQuery) -> Result<Vec<AssetDescriptor>, ListAssetsError> {
         let url = format!(
             "{}/assets?name={}{}",

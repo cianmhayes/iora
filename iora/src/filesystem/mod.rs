@@ -1,3 +1,3 @@
-mod json_catalog_cache;
+mod json_asset_index_cache;
 
-pub use json_catalog_cache::JsonFileAssetCatalogCache;
+pub use json_asset_index_cache::JsonFileAssetIndexCache;
