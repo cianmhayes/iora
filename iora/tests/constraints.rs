@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-use iora::{NameConstraint, SemVer, VersionConstraint, ConstraintParsingError};
+use iora::{ConstraintParsingError, NameConstraint, SemVer, VersionConstraint};
 
 #[test]
 fn name_exact_match() {
@@ -101,31 +101,31 @@ fn version_range() {
 fn name_constraint_from_str() {
     match NameConstraint::from_str("*a*") {
         Ok(NameConstraint::Contains(term)) => assert_eq!(term, "a"),
-        r => panic!("Unexpected result: {:?}", r)
+        r => panic!("Unexpected result: {:?}", r),
     }
 
     match NameConstraint::from_str("b*") {
         Ok(NameConstraint::StartsWith(term)) => assert_eq!(term, "b"),
-        r => panic!("Unexpected result: {:?}", r)
+        r => panic!("Unexpected result: {:?}", r),
     }
 
     match NameConstraint::from_str("c") {
         Ok(NameConstraint::ExactMatch(term)) => assert_eq!(term, "c"),
-        r => panic!("Unexpected result: {:?}", r)
+        r => panic!("Unexpected result: {:?}", r),
     }
 
     match NameConstraint::from_str("*b") {
-        Err(ConstraintParsingError::UnrecognizedVersionConstraintStructure) => {},
-        r => panic!("Unexpected result: {:?}", r)
+        Err(ConstraintParsingError::UnrecognizedNameConstraintStructure) => {}
+        r => panic!("Unexpected result: {:?}", r),
     }
 
     match NameConstraint::from_str("**") {
-        Err(ConstraintParsingError::UnrecognizedVersionConstraintStructure) => {},
-        r => panic!("Unexpected result: {:?}", r)
+        Err(ConstraintParsingError::UnrecognizedNameConstraintStructure) => {}
+        r => panic!("Unexpected result: {:?}", r),
     }
 
     match NameConstraint::from_str("") {
-        Err(ConstraintParsingError::UnrecognizedVersionConstraintStructure) => {},
-        r => panic!("Unexpected result: {:?}", r)
+        Err(ConstraintParsingError::EmptyNameConstraint) => {}
+        r => panic!("Unexpected result: {:?}", r),
     }
 }

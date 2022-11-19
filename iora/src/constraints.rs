@@ -37,10 +37,10 @@ impl FromStr for NameConstraint {
             static ref NAME_CONSTRAINT_PARSE: Regex =
                 Regex::new(r"^(?P<start>\*)?(?P<term>[^\*]+)(?P<end>\*)?$").unwrap();
         }
-        if s.len() == 0 {
+        if s.is_empty() {
             return Err(ConstraintParsingError::EmptyNameConstraint);
         }
-        if let Some(captures) = NAME_CONSTRAINT_PARSE.captures(&s) {
+        if let Some(captures) = NAME_CONSTRAINT_PARSE.captures(s) {
             return match (
                 regexes::match_to_string(captures.name("start")),
                 regexes::match_to_string(captures.name("term")),
@@ -52,7 +52,7 @@ impl FromStr for NameConstraint {
                 _ => Err(ConstraintParsingError::UnrecognizedNameConstraintStructure),
             };
         }
-        return Err(ConstraintParsingError::UnrecognizedNameConstraintStructure);
+        Err(ConstraintParsingError::UnrecognizedNameConstraintStructure)
     }
 }
 
@@ -78,10 +78,10 @@ pub enum VersionConstraint {
 impl FromStr for VersionConstraint {
     type Err = ConstraintParsingError;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        if s.len() == 0 {
+        if s.is_empty() {
             return Err(ConstraintParsingError::EmptyVersionConstraint);
         }
-        if s.contains(",") {
+        if s.contains(',') {
             let parts: Vec<_> = s.split(',').collect();
             if parts.len() > 1 {
                 if let (Ok(min_ver), Ok(max_ver)) =
@@ -89,10 +89,8 @@ impl FromStr for VersionConstraint {
                 {
                     return Ok(VersionConstraint::Between((min_ver, max_ver)));
                 }
-            } else {
-                if let Ok(min_ver) = SemVer::from_str(parts[0]) {
-                    return Ok(VersionConstraint::MinVersion(min_ver));
-                }
+            } else if let Ok(min_ver) = SemVer::from_str(parts[0]) {
+                return Ok(VersionConstraint::MinVersion(min_ver));
             }
         }
         if let Ok(full_sem_ver) = SemVer::from_str(s) {
@@ -102,7 +100,7 @@ impl FromStr for VersionConstraint {
             static ref PARTIAL_VERSION_MATCH_PARSE: Regex =
                 Regex::new(r"^(?P<major>[0-9]+)(\.(?P<minor>[0-9]+))?$").unwrap();
         }
-        if let Some(captures) = PARTIAL_VERSION_MATCH_PARSE.captures(&s) {
+        if let Some(captures) = PARTIAL_VERSION_MATCH_PARSE.captures(s) {
             match (
                 regexes::match_to_u32(captures.name("major")),
                 regexes::match_to_u32(captures.name("minor")),
@@ -120,7 +118,7 @@ impl FromStr for VersionConstraint {
                 }
             }
         }
-        return Err(ConstraintParsingError::UnrecognizedVersionConstraintStructure);
+        Err(ConstraintParsingError::UnrecognizedVersionConstraintStructure)
     }
 }
 
@@ -167,9 +165,14 @@ impl AssetQuery {
         }
     }
 
-    pub fn new_from_strings(name_constraint: &String, version_constraint: &Option<String>) -> Result<Self, ConstraintParsingError> {
+    pub fn new_from_strings(
+        name_constraint: &str,
+        version_constraint: &Option<String>,
+    ) -> Result<Self, ConstraintParsingError> {
         let nc = NameConstraint::from_str(name_constraint);
-        let vc = match version_constraint { Some(s) => Some(VersionConstraint::from_str(s)), _ => None};
+        let vc = version_constraint
+            .as_ref()
+            .map(|s| VersionConstraint::from_str(s));
         match (nc, vc) {
             (Ok(nc), Some(Ok(vc))) => Ok((nc, Some(vc)).into()),
             (Ok(nc), None) => Ok((nc, None).into()),

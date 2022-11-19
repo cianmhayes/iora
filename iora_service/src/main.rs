@@ -1,20 +1,12 @@
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
-use axum::{
-    async_trait,
-    extract::Extension,
-    extract::Query,
-    response::Json,
-    routing::get,
-    Router,
-};
+use axum::{async_trait, extract::Extension, extract::Query, response::Json, routing::get, Router};
 use bb8::ManageConnection;
 use iora::{
-    AssetCatalog, AssetDescriptor, MockAssetCatalog, SemVer, AssetQuery, ConstraintParsingError,
+    AssetCatalog, AssetDescriptor, AssetQuery, ConstraintParsingError, MockAssetCatalog, SemVer,
 };
 use std::sync::Arc;
 use std::{net::SocketAddr, str::FromStr};
-
 
 use clap::Parser;
 
@@ -67,7 +59,7 @@ impl ManageConnection for AssetCatalogConnectionManager {
     type Error = AssetCatalogConnectionError;
 
     async fn connect(&self) -> Result<Self::Connection, Self::Error> {
-        let mock = MockAssetCatalog::new();
+        let mock = MockAssetCatalog::default();
         mock.descriptors.borrow_mut().push(AssetDescriptor::new(
             "asset_en",
             &SemVer::from_str("1.0.0-beta+buildinfo").unwrap(),
@@ -111,21 +103,35 @@ impl From<ConstraintParsingError> for ListAssetsServiceError {
     fn from(e: ConstraintParsingError) -> Self {
         match e {
             ConstraintParsingError::EmptyNameConstraint => Self::MissingNameConstraint,
-            ConstraintParsingError::UnrecognizedNameConstraintStructure => Self::MalformedNameConstraint,
+            ConstraintParsingError::UnrecognizedNameConstraintStructure => {
+                Self::MalformedNameConstraint
+            }
             ConstraintParsingError::EmptyVersionConstraint => Self::MalformedVersionConstraint,
-            ConstraintParsingError::UnrecognizedVersionConstraintStructure => Self::MalformedVersionConstraint
+            ConstraintParsingError::UnrecognizedVersionConstraintStructure => {
+                Self::MalformedVersionConstraint
+            }
         }
     }
 }
 
 impl IntoResponse for ListAssetsServiceError {
     fn into_response(self) -> axum::response::Response {
-        let response = {match self {
-            ListAssetsServiceError::MissingNameConstraint => (StatusCode::BAD_REQUEST, "Missing name constraint"),
-            ListAssetsServiceError::MalformedNameConstraint => (StatusCode::BAD_REQUEST, "Bad name constraint"),
-            ListAssetsServiceError::MalformedVersionConstraint => (StatusCode::BAD_REQUEST, "Bad version constraint"),
-            ListAssetsServiceError::QueryFailed => (StatusCode::INTERNAL_SERVER_ERROR, "Something went wrong")
-        }};
+        let response = {
+            match self {
+                ListAssetsServiceError::MissingNameConstraint => {
+                    (StatusCode::BAD_REQUEST, "Missing name constraint")
+                }
+                ListAssetsServiceError::MalformedNameConstraint => {
+                    (StatusCode::BAD_REQUEST, "Bad name constraint")
+                }
+                ListAssetsServiceError::MalformedVersionConstraint => {
+                    (StatusCode::BAD_REQUEST, "Bad version constraint")
+                }
+                ListAssetsServiceError::QueryFailed => {
+                    (StatusCode::INTERNAL_SERVER_ERROR, "Something went wrong")
+                }
+            }
+        };
         response.into_response()
     }
 }
@@ -136,10 +142,7 @@ async fn list_assets(
 ) -> Result<Json<Vec<iora::AssetDescriptor>>, ListAssetsServiceError> {
     let catalog = state.catalog_connection_pool.get().await;
     let query = AssetQuery::new_from_strings(&q.name, &q.version);
-    match (
-        catalog,
-        query,
-    ) {
+    match (catalog, query) {
         (Err(_), _) => Err(ListAssetsServiceError::QueryFailed),
         (Ok(catalog), Ok(query)) => match catalog.list_assets(&query) {
             Ok(result) => Ok(Json::from(result)),

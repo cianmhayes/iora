@@ -59,6 +59,7 @@ fn comparison() {
     assert!(SemVer::from_str("3.45.6").unwrap() > SemVer::from_str("3.5.6").unwrap());
     assert!(SemVer::from_str("3.45.6").unwrap() > SemVer::from_str("3.5.6-prerelease").unwrap());
     assert!(SemVer::from_str("3.45.7").unwrap() > SemVer::from_str("3.5.6").unwrap());
+    assert!(SemVer::from_str("3.45.7").unwrap() > SemVer::from_str("3.45.6").unwrap());
     assert!(SemVer::from_str("3.45.7").unwrap() < SemVer::from_str("4.5.6").unwrap());
     assert!(SemVer::from_str("3.45.7").unwrap() <= SemVer::from_str("4.5.6").unwrap());
     assert!(SemVer::from_str("3.45.7").unwrap() != SemVer::from_str("4.5.6").unwrap());

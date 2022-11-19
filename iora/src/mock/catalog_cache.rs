@@ -18,7 +18,7 @@ impl MockAssetCatalogCache {
     pub fn new(max_age: Duration) -> Self {
         MockAssetCatalogCache {
             descriptors: RefCell::new(HashMap::new()),
-            max_age: max_age.clone(),
+            max_age,
         }
     }
 }
@@ -34,7 +34,7 @@ impl AssetCatalog for MockAssetCatalogCache {
                 return Ok(entry.descriptor.clone());
             }
         }
-        return Ok(vec![]);
+        Ok(vec![])
     }
 }
 
@@ -50,12 +50,12 @@ impl ListAssetsCache for MockAssetCatalogCache {
             None => false,
         }
     }
-    fn save(&self, descriptor: &Vec<AssetDescriptor>, query: &AssetQuery) {
+    fn save(&self, descriptor: &[AssetDescriptor], query: &AssetQuery) {
         let mut cache_map = self.descriptors.borrow_mut();
         cache_map.insert(
             query.clone(),
             MockCacheEntry {
-                descriptor: descriptor.clone(),
+                descriptor: descriptor.to_vec(),
                 last_modified: SystemTime::now(),
             },
         );

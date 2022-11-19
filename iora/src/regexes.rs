@@ -1,17 +1,12 @@
 use regex::Match;
 
 pub(crate) fn match_to_u32(m: Option<Match>) -> Option<u32> {
-    if let Some(v) = m {
-        if let Ok(i) = u32::from_str_radix(v.as_str(), 10) {
-            return Some(i);
-        }
+    match m.map(|inner_match| inner_match.as_str().parse::<u32>()) {
+        Some(Ok(i)) => Some(i),
+        _ => None,
     }
-    return None;
 }
 
 pub(crate) fn match_to_string(m: Option<Match>) -> Option<String> {
-    if let Some(v) = m {
-        return Some(v.as_str().to_string());
-    }
-    return None;
+    m.map(|inner_match| inner_match.as_str().to_string())
 }

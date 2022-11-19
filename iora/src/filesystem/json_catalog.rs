@@ -22,7 +22,7 @@ impl JsonFileAssetCatalog {
                 return Ok(descriptors);
             }
         }
-        return Err(ListAssetsError::QueryFailed);
+        Err(ListAssetsError::QueryFailed)
     }
 
     pub fn populate_file(
@@ -39,7 +39,7 @@ impl JsonFileAssetCatalog {
                 return Ok(());
             }
         }
-        return Err(ListAssetsCacheError::StorageError);
+        Err(ListAssetsCacheError::StorageError)
     }
 }
 

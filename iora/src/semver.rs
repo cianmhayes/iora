@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
 use std::str::FromStr;
 
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Deserialize, Serialize, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize, Hash)]
 pub struct SemVer {
     pub major: u32,
     pub minor: u32,
@@ -47,7 +47,7 @@ impl FromStr for SemVer {
         lazy_static! {
             static ref SEMVER_PARSE: Regex = Regex::new(r"^(?P<major>0|[1-9]\d*)\.(?P<minor>0|[1-9]\d*)\.(?P<patch>0|[1-9]\d*)(?:-(?P<prerelease>(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+(?P<buildmetadata>[0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$").unwrap();
         }
-        if let Some(captures) = SEMVER_PARSE.captures(&string_version) {
+        if let Some(captures) = SEMVER_PARSE.captures(string_version) {
             let major = regexes::match_to_u32(captures.name("major"));
             let minor = regexes::match_to_u32(captures.name("minor"));
             let patch = regexes::match_to_u32(captures.name("patch"));
@@ -65,40 +65,53 @@ impl FromStr for SemVer {
                 });
             }
         }
-        return Err(SemVerParseEror::UnparsableSemVer);
+        Err(SemVerParseEror::UnparsableSemVer)
+    }
+}
+
+impl PartialOrd for SemVer {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+
+    fn ge(&self, other: &Self) -> bool {
+        self.cmp(other) != Ordering::Less
+    }
+
+    fn gt(&self, other: &Self) -> bool {
+        self.cmp(other) == Ordering::Greater
+    }
+
+    fn le(&self, other: &Self) -> bool {
+        self.cmp(other) != Ordering::Greater
+    }
+
+    fn lt(&self, other: &Self) -> bool {
+        self.cmp(other) == Ordering::Less
     }
 }
 
 impl Ord for SemVer {
     fn cmp(&self, other: &Self) -> Ordering {
-        if self.major < other.major {
-            return Ordering::Less;
-        } else if self.major > other.major {
-            return Ordering::Greater;
-        }
-
-        if self.minor < other.minor {
-            return Ordering::Less;
-        } else if self.minor > other.minor {
-            return Ordering::Greater;
-        }
-
-        if self.patch < other.patch {
-            return Ordering::Less;
-        } else if self.patch > other.patch {
-            return Ordering::Greater;
-        }
-
-        if self.prerelease.is_none() && other.prerelease.is_none() {
-            return Ordering::Equal;
-        } else if self.prerelease.is_some() && other.prerelease.is_some() {
-            return self.prerelease.cmp(&other.prerelease);
-        } else {
-            if self.prerelease.is_some() {
-                return Ordering::Less;
-            } else {
-                return Ordering::Greater;
+        match (
+            self.major.cmp(&other.major),
+            self.minor.cmp(&other.minor),
+            self.patch.cmp(&other.patch),
+        ) {
+            (Ordering::Equal, Ordering::Equal, Ordering::Equal) => {
+                match (&self.prerelease, &other.prerelease) {
+                    (None, None) => Ordering::Equal,
+                    (Some(_), Some(_)) => self.prerelease.cmp(&other.prerelease),
+                    (Some(_), None) => Ordering::Greater,
+                    (None, Some(_)) => Ordering::Less,
+                }
             }
+            (Ordering::Equal, Ordering::Equal, Ordering::Greater) => Ordering::Greater,
+            (Ordering::Equal, Ordering::Equal, Ordering::Less) => Ordering::Less,
+            (Ordering::Equal, Ordering::Greater, _) => Ordering::Greater,
+            (Ordering::Equal, Ordering::Less, _) => Ordering::Less,
+            (Ordering::Greater, _, _) => Ordering::Greater,
+            (Ordering::Less, _, _) => Ordering::Less,
         }
     }
 

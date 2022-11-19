@@ -1,6 +1,6 @@
 use iora::{
-    AssetCatalog, AssetDescriptor, AssetQuery, CachingAssetCatalog, MockAssetCatalogCache,
-    MockAssetCatalog, SemVer,
+    AssetCatalog, AssetDescriptor, AssetQuery, CachingAssetCatalog, MockAssetCatalog,
+    MockAssetCatalogCache, SemVer,
 };
 use std::str::FromStr;
 use std::time::Duration;
@@ -8,7 +8,7 @@ use std::time::Duration;
 #[test]
 fn list() {
     let cache = Box::new(MockAssetCatalogCache::new(Duration::from_secs(1)));
-    let remote = Box::new(MockAssetCatalog::new());
+    let remote = Box::new(MockAssetCatalog::default());
     remote.descriptors.borrow_mut().push(AssetDescriptor::new(
         "asset_name",
         &SemVer::from_str("2.45.6").unwrap(),

@@ -1,4 +1,4 @@
-use crate::{algo, ListAssetsError, SemVer, AssetQuery};
+use crate::{algo, AssetQuery, ListAssetsError, SemVer};
 
 #[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
 pub struct AssetDescriptor {
@@ -16,10 +16,7 @@ impl AssetDescriptor {
         }
     }
 
-    pub fn matches_query(
-        &self,
-        query: &AssetQuery
-    ) -> bool {
+    pub fn matches_query(&self, query: &AssetQuery) -> bool {
         let name_match = query.name_constraint.matches(&self.name);
         match &query.version_constraint {
             Some(vc) => name_match && vc.matches(&self.version),
@@ -28,7 +25,7 @@ impl AssetDescriptor {
     }
 
     pub fn filter_to_matching(
-        descriptors: &Vec<AssetDescriptor>,
+        descriptors: &[AssetDescriptor],
         query: &AssetQuery,
     ) -> Result<Vec<Self>, ListAssetsError> {
         let filtered_assets: Vec<&AssetDescriptor> = descriptors

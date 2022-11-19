@@ -25,8 +25,8 @@ where
     V: Clone,
 {
     let mut result = vec![];
-    for (_key, value) in map {
-        if let Some(&max_value) = value.iter().max_by_key(|v| val_select_fn(&v)) {
+    for value in map.values() {
+        if let Some(&max_value) = value.iter().max_by_key(|v| val_select_fn(v)) {
             result.push(max_value.clone());
         }
     }

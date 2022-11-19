@@ -12,15 +12,24 @@ fn asset_descriptor_match() {
     assert!(ad.matches_query(&NameConstraint::StartsWith("asset".to_string()).into()));
     assert!(!ad.matches_query(&NameConstraint::StartsWith("assert".to_string()).into()));
     assert!(ad.matches_query(
-        &(NameConstraint::StartsWith("asset".to_string()),
-        Some(VersionConstraint::MatchMajorVersionOnly(23))).into()
+        &(
+            NameConstraint::StartsWith("asset".to_string()),
+            Some(VersionConstraint::MatchMajorVersionOnly(23))
+        )
+            .into()
     ));
     assert!(!ad.matches_query(
-        &(NameConstraint::StartsWith("asset".to_string()),
-        Some(VersionConstraint::MatchMajorVersionOnly(24))).into()
+        &(
+            NameConstraint::StartsWith("asset".to_string()),
+            Some(VersionConstraint::MatchMajorVersionOnly(24))
+        )
+            .into()
     ));
     assert!(!ad.matches_query(
-        &(NameConstraint::StartsWith("assert".to_string()),
-        Some(VersionConstraint::MatchMajorVersionOnly(23))).into()
+        &(
+            NameConstraint::StartsWith("assert".to_string()),
+            Some(VersionConstraint::MatchMajorVersionOnly(23))
+        )
+            .into()
     ));
 }

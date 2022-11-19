@@ -34,11 +34,10 @@ struct Find {
 enum IoraCliError {
     FindArgumentError(ConstraintParsingError),
     FindError(ListAssetsError),
-    NotImplemented,
 }
 
 impl Find {
-    fn run(&self, catalog: &Box<dyn iora::AssetCatalog>) -> Result<(), IoraCliError> {
+    fn run(&self, catalog: &impl iora::AssetCatalog) -> Result<(), IoraCliError> {
         match AssetQuery::new_from_strings(&self.name, &self.version) {
             Ok(query) => match catalog.list_assets(&query) {
                 Ok(results) => {
@@ -56,13 +55,13 @@ impl Find {
 #[command(about = "Fetch the desired package.")]
 struct Fetch {}
 
-fn make_asset_catalog(file_path: &Path) -> Box<dyn iora::AssetCatalog> {
+fn make_asset_catalog(file_path: &Path) -> impl iora::AssetCatalog {
     let cache = Box::new(iora::JsonFileAssetCatalogCache::new(
         file_path,
         Duration::from_nanos(1),
     ));
     let remote = Box::new(iora::HttpAssetCatalog::new("http://localhost:3000"));
-    Box::new(iora::CachingAssetCatalog::new(cache, remote))
+    iora::CachingAssetCatalog::new(cache, remote)
 }
 
 fn print_asset_descriptor_table(descriptors: &Vec<iora::AssetDescriptor>) {
@@ -83,8 +82,12 @@ fn main() {
     cache_path.push(PathBuf::from(".cache"));
     cache_path.push(PathBuf::from("descriptors.json"));
     let catalog = make_asset_catalog(&cache_path);
-    let command_result = match args.command {
-        IoraCommands::Find(f) => f.run(&catalog),
-        _ => Err(IoraCliError::NotImplemented),
+    match args.command {
+        IoraCommands::Find(f) => match f.run(&catalog) {
+            Ok(()) => {}
+            Err(IoraCliError::FindArgumentError(_)) => println!("Faield to parse the constraints."),
+            Err(IoraCliError::FindError(_)) => println!("Failed to execute find."),
+        },
+        IoraCommands::Fetch(_) => println!("Fetch not implemented yet."),
     };
 }

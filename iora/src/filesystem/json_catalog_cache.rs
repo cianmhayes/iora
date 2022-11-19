@@ -21,7 +21,7 @@ impl JsonFileAssetCatalogCache {
     pub fn new(file_path: &Path, max_age: Duration) -> Self {
         JsonFileAssetCatalogCache {
             storage_path: file_path.to_path_buf(),
-            max_age: max_age.clone(),
+            max_age,
         }
     }
     fn read_from_file(&self) -> HashMap<AssetQuery, CacheEntry> {
@@ -33,7 +33,7 @@ impl JsonFileAssetCatalogCache {
                 return descriptors;
             }
         }
-        return HashMap::new();
+        HashMap::new()
     }
     fn save_to_file(&self, descriptors: HashMap<AssetQuery, CacheEntry>) {
         if let Ok(file) = File::options()
@@ -55,10 +55,10 @@ impl AssetCatalog for JsonFileAssetCatalogCache {
                 .unwrap_or(self.max_age)
                 < self.max_age
             {
-                return Ok(entry.descriptor.clone());
+                return Ok(entry.descriptor.to_vec());
             }
         }
-        return Ok(vec![]);
+        Ok(vec![])
     }
 }
 
@@ -75,12 +75,12 @@ impl ListAssetsCache for JsonFileAssetCatalogCache {
         }
     }
 
-    fn save(&self, descriptor: &Vec<AssetDescriptor>, query: &AssetQuery) {
+    fn save(&self, descriptor: &[AssetDescriptor], query: &AssetQuery) {
         let mut cache_map = self.read_from_file();
         cache_map.insert(
             query.clone(),
             CacheEntry {
-                descriptor: descriptor.clone(),
+                descriptor: descriptor.to_vec(),
                 last_modified: SystemTime::now(),
             },
         );

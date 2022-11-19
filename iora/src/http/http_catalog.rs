@@ -36,7 +36,10 @@ impl AssetCatalog for HttpAssetCatalog {
                 Ok(result) => Ok(result),
                 Err(_) => Err(ListAssetsError::QueryFailed),
             },
-            Err(e) => {print!("{:?}", e); Err(ListAssetsError::QueryFailed)},
+            Err(e) => {
+                print!("{:?}", e);
+                Err(ListAssetsError::QueryFailed)
+            }
         }
     }
 }
