@@ -1,55 +1,73 @@
 use std::collections::HashMap;
-use std::fs::File;
+use std::collections::hash_map::DefaultHasher;
+use std::fs::{File, OpenOptions};
+use std::hash::{Hash, Hasher};
 use std::io::{BufReader, BufWriter};
 use std::path::{Path, PathBuf};
 use std::time::{Duration, SystemTime};
+
+use tracing::{event, instrument, Level};
 
 use crate::{AssetCatalog, AssetDescriptor, AssetQuery, ListAssetsCache, ListAssetsError};
 
 #[derive(Debug, serde::Deserialize, serde::Serialize)]
 struct CacheEntry {
     descriptor: Vec<AssetDescriptor>,
+    query: AssetQuery,
     last_modified: SystemTime,
 }
 
+#[derive(Debug)]
 pub struct JsonFileAssetCatalogCache {
     storage_path: PathBuf,
     max_age: Duration,
 }
 
 impl JsonFileAssetCatalogCache {
+    #[instrument]
     pub fn new(file_path: &Path, max_age: Duration) -> Self {
+        event!(Level::INFO, file_path_exists= file_path.exists());
         JsonFileAssetCatalogCache {
             storage_path: file_path.to_path_buf(),
             max_age,
         }
     }
-    fn read_from_file(&self) -> HashMap<AssetQuery, CacheEntry> {
+    fn read_from_file(&self) -> HashMap<u64, CacheEntry> {
         if let Ok(file) = File::open(&self.storage_path) {
             let reader = BufReader::new(file);
             if let Ok(descriptors) =
-                serde_json::from_reader::<_, HashMap<AssetQuery, CacheEntry>>(reader)
+                serde_json::from_reader::<_, HashMap<u64, CacheEntry>>(reader)
             {
                 return descriptors;
             }
         }
         HashMap::new()
     }
-    fn save_to_file(&self, descriptors: HashMap<AssetQuery, CacheEntry>) {
-        if let Ok(file) = File::options()
-            .create(true)
-            .write(true)
-            .open(&self.storage_path)
+
+    #[instrument]
+    fn save_to_file(&self, descriptors: HashMap<u64, CacheEntry>) {
+        match OpenOptions::new().write(true).create(true).open(&self.storage_path)
         {
-            let writer = BufWriter::new(file);
-            let _ = serde_json::to_writer_pretty(writer, &descriptors);
-        }
+            Ok(file) => {
+                let writer = BufWriter::new(file);
+                if let Err(e) = serde_json::to_writer_pretty(writer, &descriptors) {
+                    event!(Level::ERROR, error=e.to_string());
+                }
+            }
+            Err(e) => event!(Level::ERROR, error=e.to_string()),
+        };
+    }
+
+    fn cache_key(query:&AssetQuery) -> u64 {
+        let mut hasher = DefaultHasher::new();
+        query.hash(&mut hasher);
+        hasher.finish()
     }
 }
 
 impl AssetCatalog for JsonFileAssetCatalogCache {
-    fn list_assets(&self, query: &AssetQuery) -> Result<Vec<AssetDescriptor>, ListAssetsError> {
-        if let Some(entry) = self.read_from_file().get(query) {
+    fn list_assets(&self, query: &AssetQuery) -> Result<Vec<AssetDescriptor>, ListAssetsError> {        
+        if let Some(entry) = self.read_from_file().get(&Self::cache_key(query)) {
             if SystemTime::now()
                 .duration_since(entry.last_modified)
                 .unwrap_or(self.max_age)
@@ -64,7 +82,8 @@ impl AssetCatalog for JsonFileAssetCatalogCache {
 
 impl ListAssetsCache for JsonFileAssetCatalogCache {
     fn has_cache_entry(&self, query: &AssetQuery) -> bool {
-        match self.read_from_file().get(query) {
+        
+        match self.read_from_file().get(&Self::cache_key(query)) {
             Some(entry) => {
                 SystemTime::now()
                     .duration_since(entry.last_modified)
@@ -78,9 +97,10 @@ impl ListAssetsCache for JsonFileAssetCatalogCache {
     fn save(&self, descriptor: &[AssetDescriptor], query: &AssetQuery) {
         let mut cache_map = self.read_from_file();
         cache_map.insert(
-            query.clone(),
+            Self::cache_key(query),
             CacheEntry {
                 descriptor: descriptor.to_vec(),
+                query: query.clone(),
                 last_modified: SystemTime::now(),
             },
         );

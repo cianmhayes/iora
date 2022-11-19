@@ -13,7 +13,7 @@ pub use asset_catalog::{
 };
 pub use asset_descriptor::AssetDescriptor;
 pub use constraints::{AssetQuery, ConstraintParsingError, NameConstraint, VersionConstraint};
-pub use filesystem::{JsonFileAssetCatalog, JsonFileAssetCatalogCache};
+pub use filesystem::JsonFileAssetCatalogCache;
 pub use http::HttpAssetCatalog;
 pub use mock::{MockAssetCatalog, MockAssetCatalogCache};
 pub use semver::{SemVer, SemVerParseEror};

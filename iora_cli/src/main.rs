@@ -1,8 +1,10 @@
+use std::fs;
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 
 use clap::{Parser, Subcommand};
 use iora::{AssetQuery, ConstraintParsingError, ListAssetsError};
+use tracing_subscriber::{filter, prelude::*};
 
 #[derive(Parser, Debug)]
 #[command(name = "iora")]
@@ -10,6 +12,12 @@ use iora::{AssetQuery, ConstraintParsingError, ListAssetsError};
 struct IoraCli {
     #[command(subcommand)]
     command: IoraCommands,
+
+    #[arg(long)]
+    log: bool,
+
+    #[arg(long)]
+    verbose: bool,
 }
 
 #[derive(Debug, Subcommand)]
@@ -27,7 +35,7 @@ struct Find {
     #[arg(short, long, value_name = "NAME_CONSTRAINT", required = true)]
     name: String,
     /// A pattern describing the range of asset versions of interest.
-    #[arg(short, long, value_name = "VERSION_CONSTRAINT", required = true)]
+    #[arg(short, long, value_name = "VERSION_CONSTRAINT", required = false)]
     version: Option<String>,
 }
 
@@ -60,7 +68,7 @@ fn make_asset_catalog(file_path: &Path) -> impl iora::AssetCatalog {
         file_path,
         Duration::from_nanos(1),
     ));
-    let remote = Box::new(iora::HttpAssetCatalog::new("http://localhost:3000"));
+    let remote = Box::new(iora::HttpAssetCatalog::new("http://localhost:3001"));
     iora::CachingAssetCatalog::new(cache, remote)
 }
 
@@ -78,8 +86,26 @@ fn print_asset_descriptor_table(descriptors: &Vec<iora::AssetDescriptor>) {
 
 fn main() {
     let args = IoraCli::parse();
+
+    if args.log {
+        let stdout_log = tracing_subscriber::fmt::layer().with_ansi(false).pretty();
+        tracing_subscriber::registry()
+            .with(stdout_log.with_filter(if args.verbose {
+                filter::LevelFilter::INFO
+            } else {
+                filter::LevelFilter::WARN
+            }))
+            .init();
+    }
+
     let mut cache_path = std::env::current_dir().unwrap();
     cache_path.push(PathBuf::from(".cache"));
+    if !cache_path.as_path().exists() {
+        if let Err(e) = fs::create_dir_all(cache_path.as_path()) {
+            println!("Error: {}", e);
+            return;
+        }
+    }
     cache_path.push(PathBuf::from("descriptors.json"));
     let catalog = make_asset_catalog(&cache_path);
     match args.command {
