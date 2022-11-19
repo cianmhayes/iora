@@ -1,6 +1,4 @@
 use crate::regexes;
-use lazy_static::lazy_static;
-use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
 use std::str::FromStr;
@@ -44,13 +42,10 @@ pub enum SemVerParseEror {
 impl FromStr for SemVer {
     type Err = SemVerParseEror;
     fn from_str(string_version: &str) -> Result<Self, Self::Err> {
-        lazy_static! {
-            static ref SEMVER_PARSE: Regex = Regex::new(r"^(?P<major>0|[1-9]\d*)\.(?P<minor>0|[1-9]\d*)\.(?P<patch>0|[1-9]\d*)(?:-(?P<prerelease>(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+(?P<buildmetadata>[0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$").unwrap();
-        }
-        if let Some(captures) = SEMVER_PARSE.captures(string_version) {
-            let major = regexes::match_to_u32(captures.name("major"));
-            let minor = regexes::match_to_u32(captures.name("minor"));
-            let patch = regexes::match_to_u32(captures.name("patch"));
+        if let Some(captures) = regexes::semver_regex(string_version) {
+            let major = regexes::parse_u32(captures.name("major"));
+            let minor = regexes::parse_u32(captures.name("minor"));
+            let patch = regexes::parse_u32(captures.name("patch"));
             let prerelease = regexes::match_to_string(captures.name("prerelease"));
             let buildmetadata = regexes::match_to_string(captures.name("buildmetadata"));
             if let (Some(major), Some(minor), Some(patch), prerelease, buildmetadata) =

@@ -2,9 +2,6 @@ use std::str::FromStr;
 
 use crate::{regexes, SemVer};
 
-use lazy_static::lazy_static;
-use regex::Regex;
-
 #[derive(Clone, Debug, Hash, Eq, PartialEq, serde::Deserialize, serde::Serialize)]
 pub enum NameConstraint {
     ExactMatch(String),
@@ -33,14 +30,10 @@ pub enum ConstraintParsingError {
 impl FromStr for NameConstraint {
     type Err = ConstraintParsingError;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        lazy_static! {
-            static ref NAME_CONSTRAINT_PARSE: Regex =
-                Regex::new(r"^(?P<start>\*)?(?P<term>[^\*]+)(?P<end>\*)?$").unwrap();
-        }
         if s.is_empty() {
             return Err(ConstraintParsingError::EmptyNameConstraint);
         }
-        if let Some(captures) = NAME_CONSTRAINT_PARSE.captures(s) {
+        if let Some(captures) = regexes::name_constraint_regex(s) {
             return match (
                 regexes::match_to_string(captures.name("start")),
                 regexes::match_to_string(captures.name("term")),
@@ -96,14 +89,10 @@ impl FromStr for VersionConstraint {
         if let Ok(full_sem_ver) = SemVer::from_str(s) {
             return Ok(VersionConstraint::ExactMatch(full_sem_ver));
         }
-        lazy_static! {
-            static ref PARTIAL_VERSION_MATCH_PARSE: Regex =
-                Regex::new(r"^(?P<major>[0-9]+)(\.(?P<minor>[0-9]+))?$").unwrap();
-        }
-        if let Some(captures) = PARTIAL_VERSION_MATCH_PARSE.captures(s) {
+        if let Some(captures) = regexes::partial_version_constraint_regex(s) {
             match (
-                regexes::match_to_u32(captures.name("major")),
-                regexes::match_to_u32(captures.name("minor")),
+                regexes::parse_u32(captures.name("major")),
+                regexes::parse_u32(captures.name("minor")),
             ) {
                 (Some(major), Some(minor)) => {
                     return Ok(VersionConstraint::MatchMajorAndMinorVersionOnly((
