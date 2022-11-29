@@ -1,8 +1,20 @@
+#==========================================================================================
+# Builder
+#==========================================================================================
 FROM rust:1.64 AS builder
+# Build a trivial project to trigger crates.io index update
+WORKDIR /usr/src/tmp
+RUN cargo init .
+RUN cargo add serde
+
+# Build iora
 WORKDIR /usr/src/iora
 COPY . .
 RUN cargo build --release --locked
 
+#==========================================================================================
+# Service
+#==========================================================================================
 FROM debian:bookworm-slim AS runtime
 WORKDIR /usr/local/bin/iora
 ARG IORA_PORT=3000
