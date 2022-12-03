@@ -1,6 +1,20 @@
 use std::str::FromStr;
 
+use thiserror::Error;
+
 use crate::{regexes, SemVer};
+
+#[derive(Error, Debug)]
+pub enum ConstraintParsingError {
+    #[error("A name constraint is required but none was provided.")]
+    EmptyNameConstraint,
+    #[error("A name constraint is required but the provided constraint was malformed: '{0}'.")]
+    UnrecognizedNameConstraintStructure(String),
+    #[error("The version constraint was set but the value was empty.")]
+    EmptyVersionConstraint,
+    #[error("The version constraint was set but the value was malformed: '{0}'.")]
+    UnrecognizedVersionConstraintStructure(String),
+}
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq, serde::Deserialize, serde::Serialize)]
 pub enum NameConstraint {
@@ -19,14 +33,6 @@ impl NameConstraint {
     }
 }
 
-#[derive(Debug)]
-pub enum ConstraintParsingError {
-    EmptyNameConstraint,
-    UnrecognizedNameConstraintStructure,
-    EmptyVersionConstraint,
-    UnrecognizedVersionConstraintStructure,
-}
-
 impl FromStr for NameConstraint {
     type Err = ConstraintParsingError;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -42,10 +48,10 @@ impl FromStr for NameConstraint {
                 (Some(_), Some(term), Some(_)) => Ok(NameConstraint::Contains(term)),
                 (None, Some(term), Some(_)) => Ok(NameConstraint::StartsWith(term)),
                 (None, Some(term), None) => Ok(NameConstraint::ExactMatch(term)),
-                _ => Err(ConstraintParsingError::UnrecognizedNameConstraintStructure),
+                _ => Err(ConstraintParsingError::UnrecognizedNameConstraintStructure(s.to_owned())),
             };
         }
-        Err(ConstraintParsingError::UnrecognizedNameConstraintStructure)
+        Err(ConstraintParsingError::UnrecognizedNameConstraintStructure(s.to_owned()))
     }
 }
 
@@ -103,11 +109,11 @@ impl FromStr for VersionConstraint {
                     return Ok(VersionConstraint::MatchMajorVersionOnly(major));
                 }
                 _ => {
-                    return Err(ConstraintParsingError::UnrecognizedVersionConstraintStructure);
+                    return Err(ConstraintParsingError::UnrecognizedVersionConstraintStructure(s.to_owned()));
                 }
             }
         }
-        Err(ConstraintParsingError::UnrecognizedVersionConstraintStructure)
+        Err(ConstraintParsingError::UnrecognizedVersionConstraintStructure(s.to_owned()))
     }
 }
 

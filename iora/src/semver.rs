@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
 use std::str::FromStr;
 
-#[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize, Hash)]
+#[derive(Clone, Debug, Default, PartialEq, Eq, Deserialize, Serialize, Hash)]
 pub struct SemVer {
     pub major: u32,
     pub minor: u32,

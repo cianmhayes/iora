@@ -14,6 +14,6 @@ pub use asset_index::{
 pub use asset_descriptor::AssetDescriptor;
 pub use constraints::{AssetQuery, ConstraintParsingError, NameConstraint, VersionConstraint};
 pub use filesystem::JsonFileAssetIndexCache;
-pub use http::HttpAssetIndex;
+pub use http::{AzureBlobAssetIndex, HttpAssetIndex};
 pub use mock::{MockAssetIndex, MockAssetIndexCache};
 pub use semver::{SemVer, SemVerParseEror};

@@ -1,11 +1,8 @@
 #==========================================================================================
 # Builder
 #==========================================================================================
-FROM rust:1.64 AS builder
-# Build a trivial project to trigger crates.io index update
-WORKDIR /usr/src/tmp
-RUN cargo init .
-RUN cargo add serde
+FROM rust:1.64-bullseye AS builder
+RUN cargo install cargo-audit
 
 # Build iora
 WORKDIR /usr/src/iora
@@ -25,4 +22,5 @@ RUN apt-get update
 RUN apt-get install -y openssl ca-certificates
 
 COPY --from=builder /usr/src/iora/target/release/iora_service /usr/local/bin/iora/iora_service
+COPY --from=builder /usr/src/iora/iora_service/config/* /usr/local/bin/iora/config/
 ENTRYPOINT /usr/local/bin/iora/iora_service -p $IORA_PORT

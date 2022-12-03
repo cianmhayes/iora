@@ -68,7 +68,7 @@ fn make_asset_index(file_path: &Path) -> impl iora::AssetIndex {
         file_path,
         Duration::from_nanos(1),
     ));
-    let remote = Box::new(iora::HttpAssetIndex::new("http://localhost:3001"));
+    let remote = Box::new(iora::HttpAssetIndex::new("http://localhost:3000"));
     iora::CachingAssetIndex::new(cache, remote)
 }
 
