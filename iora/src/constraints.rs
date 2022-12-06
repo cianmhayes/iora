@@ -39,19 +39,14 @@ impl FromStr for NameConstraint {
         if s.is_empty() {
             return Err(ConstraintParsingError::EmptyNameConstraint);
         }
-        if let Some(captures) = regexes::name_constraint_regex(s) {
-            return match (
-                regexes::match_to_string(captures.name("start")),
-                regexes::match_to_string(captures.name("term")),
-                regexes::match_to_string(captures.name("end")),
-            ) {
-                (Some(_), Some(term), Some(_)) => Ok(NameConstraint::Contains(term)),
-                (None, Some(term), Some(_)) => Ok(NameConstraint::StartsWith(term)),
-                (None, Some(term), None) => Ok(NameConstraint::ExactMatch(term)),
-                _ => Err(ConstraintParsingError::UnrecognizedNameConstraintStructure(s.to_owned())),
-            };
+        match regexes::parse_name_constraint(s) {
+            (Some(_), Some(term), Some(_)) => Ok(NameConstraint::Contains(term)),
+            (None, Some(term), Some(_)) => Ok(NameConstraint::StartsWith(term)),
+            (None, Some(term), None) => Ok(NameConstraint::ExactMatch(term)),
+            _ => Err(ConstraintParsingError::UnrecognizedNameConstraintStructure(
+                s.to_owned(),
+            )),
         }
-        Err(ConstraintParsingError::UnrecognizedNameConstraintStructure(s.to_owned()))
     }
 }
 
@@ -95,25 +90,13 @@ impl FromStr for VersionConstraint {
         if let Ok(full_sem_ver) = SemVer::from_str(s) {
             return Ok(VersionConstraint::ExactMatch(full_sem_ver));
         }
-        if let Some(captures) = regexes::partial_version_constraint_regex(s) {
-            match (
-                regexes::parse_u32(captures.name("major")),
-                regexes::parse_u32(captures.name("minor")),
-            ) {
-                (Some(major), Some(minor)) => {
-                    return Ok(VersionConstraint::MatchMajorAndMinorVersionOnly((
-                        major, minor,
-                    )));
-                }
-                (Some(major), None) => {
-                    return Ok(VersionConstraint::MatchMajorVersionOnly(major));
-                }
-                _ => {
-                    return Err(ConstraintParsingError::UnrecognizedVersionConstraintStructure(s.to_owned()));
-                }
-            }
+        match regexes::parse_partial_version_constraint(s) {
+            (Some(major), Some(minor)) => Ok(VersionConstraint::MatchMajorAndMinorVersionOnly((
+                major, minor,
+            ))),
+            (Some(major), None) => Ok(VersionConstraint::MatchMajorVersionOnly(major)),
+            _ => Err(ConstraintParsingError::UnrecognizedVersionConstraintStructure(s.to_owned())),
         }
-        Err(ConstraintParsingError::UnrecognizedVersionConstraintStructure(s.to_owned()))
     }
 }
 

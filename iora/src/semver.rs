@@ -42,23 +42,16 @@ pub enum SemVerParseEror {
 impl FromStr for SemVer {
     type Err = SemVerParseEror;
     fn from_str(string_version: &str) -> Result<Self, Self::Err> {
-        if let Some(captures) = regexes::semver_regex(string_version) {
-            let major = regexes::parse_u32(captures.name("major"));
-            let minor = regexes::parse_u32(captures.name("minor"));
-            let patch = regexes::parse_u32(captures.name("patch"));
-            let prerelease = regexes::match_to_string(captures.name("prerelease"));
-            let buildmetadata = regexes::match_to_string(captures.name("buildmetadata"));
-            if let (Some(major), Some(minor), Some(patch), prerelease, buildmetadata) =
-                (major, minor, patch, prerelease, buildmetadata)
-            {
-                return Ok(SemVer {
-                    major,
-                    minor,
-                    patch,
-                    prerelease,
-                    buildmetadata,
-                });
-            }
+        if let (Some(major), Some(minor), Some(patch), prerelease, buildmetadata) =
+            regexes::parse_semver(string_version)
+        {
+            return Ok(SemVer {
+                major,
+                minor,
+                patch,
+                prerelease,
+                buildmetadata,
+            });
         }
         Err(SemVerParseEror::UnparsableSemVer)
     }

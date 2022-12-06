@@ -1,10 +1,10 @@
-mod algo;
+mod collection_utilities;
 mod asset_index;
 mod asset_descriptor;
 mod constraints;
 mod filesystem;
 mod http;
-mod mock;
+mod memory;
 mod regexes;
 mod semver;
 
@@ -15,5 +15,5 @@ pub use asset_descriptor::AssetDescriptor;
 pub use constraints::{AssetQuery, ConstraintParsingError, NameConstraint, VersionConstraint};
 pub use filesystem::JsonFileAssetIndexCache;
 pub use http::{AzureBlobAssetIndex, HttpAssetIndex};
-pub use mock::{MockAssetIndex, MockAssetIndexCache};
+pub use memory::{MemoryAssetIndex, MemoryAssetIndexCache};
 pub use semver::{SemVer, SemVerParseEror};

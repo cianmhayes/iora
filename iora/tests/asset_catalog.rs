@@ -1,14 +1,14 @@
 use iora::{
-    AssetIndex, AssetDescriptor, AssetQuery, CachingAssetIndex, MockAssetIndex,
-    MockAssetIndexCache, SemVer,
+    AssetIndex, AssetDescriptor, AssetQuery, CachingAssetIndex, MemoryAssetIndex,
+    MemoryAssetIndexCache, SemVer,
 };
 use std::str::FromStr;
 use std::time::Duration;
 
 #[test]
 fn list() {
-    let cache = Box::new(MockAssetIndexCache::new(Duration::from_secs(1)));
-    let remote = Box::new(MockAssetIndex::default());
+    let cache = Box::new(MemoryAssetIndexCache::new(Duration::from_secs(1)));
+    let remote = Box::new(MemoryAssetIndex::default());
     remote.descriptors.borrow_mut().push(AssetDescriptor::new(
         "asset_name",
         &SemVer::from_str("2.45.6").unwrap(),

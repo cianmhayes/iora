@@ -1,4 +1,4 @@
-use crate::{algo, AssetQuery, ListAssetsError, SemVer};
+use crate::{collection_utilities, AssetQuery, ListAssetsError, SemVer};
 
 #[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
 pub struct AssetDescriptor {
@@ -32,11 +32,11 @@ impl AssetDescriptor {
             .iter()
             .filter(|&ad| ad.matches_query(query))
             .collect();
-        let grouped = algo::group_by::<Vec<&AssetDescriptor>, String>(filtered_assets, |&ad| {
+        let grouped = collection_utilities::group_by::<Vec<&AssetDescriptor>, String>(filtered_assets, |&ad| {
             ad.name.to_string()
         });
         let flattened: Vec<AssetDescriptor> =
-            algo::reduce_to_max_by_key(&grouped, |ad| &ad.version);
+            collection_utilities::reduce_to_max_by_key(&grouped, |ad| &ad.version);
         Ok(flattened)
     }
 }

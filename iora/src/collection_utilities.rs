@@ -32,3 +32,18 @@ where
     }
     result
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn group_by_test() {
+        let grouped = group_by(vec!["a", "b", "cc"], |s| s.len());
+        assert_eq!(grouped.keys().count(), 2);
+        assert_eq!(grouped.get(&1).map(|v| v.len()), Some(2));
+        assert_eq!(grouped.get(&2).map(|v| v.len()), Some(1));
+
+        assert_eq!(group_by(Vec::<&str>::new(), |s| s.len()).keys().count(), 0);
+    }
+}

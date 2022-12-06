@@ -4,26 +4,26 @@ use std::time::{Duration, SystemTime};
 
 use crate::{AssetIndex, AssetDescriptor, AssetQuery, ListAssetsCache, ListAssetsError};
 
-struct MockCacheEntry {
+struct MemoryCacheEntry {
     descriptor: Vec<AssetDescriptor>,
     last_modified: SystemTime,
 }
 
-pub struct MockAssetIndexCache {
-    descriptors: RefCell<HashMap<AssetQuery, MockCacheEntry>>,
+pub struct MemoryAssetIndexCache {
+    descriptors: RefCell<HashMap<AssetQuery, MemoryCacheEntry>>,
     max_age: Duration,
 }
 
-impl MockAssetIndexCache {
+impl MemoryAssetIndexCache {
     pub fn new(max_age: Duration) -> Self {
-        MockAssetIndexCache {
+        MemoryAssetIndexCache {
             descriptors: RefCell::new(HashMap::new()),
             max_age,
         }
     }
 }
 
-impl AssetIndex for MockAssetIndexCache {
+impl AssetIndex for MemoryAssetIndexCache {
     fn list_assets(&self, query: &AssetQuery) -> Result<Vec<AssetDescriptor>, ListAssetsError> {
         if let Some(entry) = self.descriptors.borrow().get(query) {
             if SystemTime::now()
@@ -38,7 +38,7 @@ impl AssetIndex for MockAssetIndexCache {
     }
 }
 
-impl ListAssetsCache for MockAssetIndexCache {
+impl ListAssetsCache for MemoryAssetIndexCache {
     fn has_cache_entry(&self, query: &AssetQuery) -> bool {
         match self.descriptors.borrow().get(query) {
             Some(entry) => {
@@ -54,7 +54,7 @@ impl ListAssetsCache for MockAssetIndexCache {
         let mut cache_map = self.descriptors.borrow_mut();
         cache_map.insert(
             query.clone(),
-            MockCacheEntry {
+            MemoryCacheEntry {
                 descriptor: descriptor.to_vec(),
                 last_modified: SystemTime::now(),
             },
