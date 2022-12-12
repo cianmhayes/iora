@@ -134,12 +134,12 @@ pub struct AssetQuery {
 
 impl AssetQuery {
     pub fn new(
-        name_constraint: &NameConstraint,
-        version_constraint: &Option<VersionConstraint>,
+        name_constraint: NameConstraint,
+        version_constraint: Option<VersionConstraint>,
     ) -> Self {
         AssetQuery {
-            name_constraint: name_constraint.clone(),
-            version_constraint: version_constraint.clone(),
+            name_constraint,
+            version_constraint,
         }
     }
 
@@ -174,24 +174,6 @@ impl From<(NameConstraint, Option<VersionConstraint>)> for AssetQuery {
         AssetQuery {
             name_constraint: tuple.0,
             version_constraint: tuple.1,
-        }
-    }
-}
-
-impl From<(&NameConstraint, &Option<VersionConstraint>)> for AssetQuery {
-    fn from(tuple: (&NameConstraint, &Option<VersionConstraint>)) -> Self {
-        AssetQuery {
-            name_constraint: tuple.0.clone(),
-            version_constraint: tuple.1.clone(),
-        }
-    }
-}
-
-impl From<(&NameConstraint, &VersionConstraint)> for AssetQuery {
-    fn from(tuple: (&NameConstraint, &VersionConstraint)) -> Self {
-        AssetQuery {
-            name_constraint: tuple.0.clone(),
-            version_constraint: Some(tuple.1.clone()),
         }
     }
 }

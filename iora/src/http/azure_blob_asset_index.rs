@@ -1,9 +1,7 @@
-use std::str::FromStr;
-
+use crate::{AssetDescriptor, AssetIndex, AssetQuery, ListAssetsError, SemVer};
 use quick_xml::de::from_str;
 use serde::{Deserialize, Serialize};
-
-use crate::{AssetDescriptor, AssetIndex, AssetQuery, ListAssetsError, SemVer};
+use std::str::FromStr;
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
 struct Metadata {
@@ -42,7 +40,7 @@ impl EnumerationResults {
             if let Some(m) = &b.metadata {
                 let ad = AssetDescriptor::new(
                     &m.name,
-                    &SemVer::from_str(&m.version).unwrap_or_default(),
+                    SemVer::from_str(&m.version).unwrap_or_default(),
                     &m.sha1,
                 );
                 if ad.matches_query(query) {

@@ -64,12 +64,11 @@ impl Find {
 struct Fetch {}
 
 fn make_asset_index(file_path: &Path) -> impl iora::AssetIndex {
-    let cache = Box::new(iora::JsonFileAssetIndexCache::new(
+    iora::JsonFileAssetIndexCache::new(
         file_path,
         Duration::from_nanos(1),
-    ));
-    let remote = Box::new(iora::HttpAssetIndex::new("http://localhost:3000"));
-    iora::CachingAssetIndex::new(cache, remote)
+        iora::HttpAssetIndex::new("http://localhost:3000"),
+    )
 }
 
 fn print_asset_descriptor_table(descriptors: &Vec<iora::AssetDescriptor>) {

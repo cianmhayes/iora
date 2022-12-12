@@ -1,5 +1,6 @@
 use crate::{AssetDescriptor, AssetIndex, AssetQuery, ListAssetsError};
 
+#[derive(Debug)]
 pub struct HttpAssetIndex {
     target_host: String,
 }
@@ -34,9 +35,15 @@ impl AssetIndex for HttpAssetIndex {
         match reqwest::blocking::get(url) {
             Ok(resp) => match resp.json::<Vec<AssetDescriptor>>() {
                 Ok(result) => Ok(result),
-                Err(json_error) => Err(ListAssetsError::AssetIndexInternalError(format!("Faield to parse response: {}", json_error))),
+                Err(json_error) => Err(ListAssetsError::AssetIndexInternalError(format!(
+                    "Faield to parse response: {}",
+                    json_error
+                ))),
             },
-            Err(request_error) => Err(ListAssetsError::AssetIndexInternalError(format!("Service request failed: {}", request_error))),
+            Err(request_error) => Err(ListAssetsError::AssetIndexInternalError(format!(
+                "Service request failed: {}",
+                request_error
+            ))),
         }
     }
 }
