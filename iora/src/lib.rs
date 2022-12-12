@@ -9,7 +9,7 @@ mod regexes;
 mod semver;
 
 pub use asset_index::{
-    AssetIndex, CachingAssetIndex, ListAssetsCache, ListAssetsCacheError, ListAssetsError,
+    AssetIndex, CachingAssetIndex, ListAssetsCache, ListAssetsError,
 };
 pub use asset_descriptor::AssetDescriptor;
 pub use constraints::{AssetQuery, ConstraintParsingError, NameConstraint, VersionConstraint};

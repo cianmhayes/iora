@@ -32,11 +32,50 @@ impl AssetDescriptor {
             .iter()
             .filter(|&ad| ad.matches_query(query))
             .collect();
-        let grouped = collection_utilities::group_by::<Vec<&AssetDescriptor>, String>(filtered_assets, |&ad| {
-            ad.name.to_string()
-        });
+        let grouped = collection_utilities::group_by::<Vec<&AssetDescriptor>, String>(
+            filtered_assets,
+            |&ad| ad.name.to_string(),
+        );
         let flattened: Vec<AssetDescriptor> =
             collection_utilities::reduce_to_max_by_key(&grouped, |ad| &ad.version);
         Ok(flattened)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{AssetDescriptor, NameConstraint, SemVer, VersionConstraint};
+    use std::str::FromStr;
+
+    #[test]
+    fn asset_descriptor_match() {
+        let ad = AssetDescriptor {
+            name: "asset.name".to_string(),
+            version: SemVer::from_str("23.45.678").unwrap(),
+            content_hash: "content_hash".to_string(),
+        };
+        assert!(ad.matches_query(&NameConstraint::StartsWith("asset".to_string()).into()));
+        assert!(!ad.matches_query(&NameConstraint::StartsWith("assert".to_string()).into()));
+        assert!(ad.matches_query(
+            &(
+                NameConstraint::StartsWith("asset".to_string()),
+                Some(VersionConstraint::MatchMajorVersionOnly(23))
+            )
+                .into()
+        ));
+        assert!(!ad.matches_query(
+            &(
+                NameConstraint::StartsWith("asset".to_string()),
+                Some(VersionConstraint::MatchMajorVersionOnly(24))
+            )
+                .into()
+        ));
+        assert!(!ad.matches_query(
+            &(
+                NameConstraint::StartsWith("assert".to_string()),
+                Some(VersionConstraint::MatchMajorVersionOnly(23))
+            )
+                .into()
+        ));
     }
 }

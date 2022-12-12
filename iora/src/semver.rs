@@ -12,6 +12,24 @@ pub struct SemVer {
     pub buildmetadata: Option<String>,
 }
 
+impl SemVer {
+    pub fn new(
+        major: u32,
+        minor: u32,
+        patch: u32,
+        prerelease: Option<String>,
+        buildmetadata: Option<String>,
+    ) -> Self {
+        SemVer {
+            major,
+            minor,
+            patch,
+            prerelease,
+            buildmetadata,
+        }
+    }
+}
+
 impl ToString for SemVer {
     fn to_string(&self) -> String {
         format!(
@@ -36,7 +54,6 @@ impl ToString for SemVer {
 #[derive(Debug)]
 pub enum SemVerParseEror {
     UnparsableSemVer,
-    MissingRequiredVersionPiece,
 }
 
 impl FromStr for SemVer {
@@ -94,12 +111,9 @@ impl Ord for SemVer {
                     (None, Some(_)) => Ordering::Less,
                 }
             }
-            (Ordering::Equal, Ordering::Equal, Ordering::Greater) => Ordering::Greater,
-            (Ordering::Equal, Ordering::Equal, Ordering::Less) => Ordering::Less,
-            (Ordering::Equal, Ordering::Greater, _) => Ordering::Greater,
-            (Ordering::Equal, Ordering::Less, _) => Ordering::Less,
-            (Ordering::Greater, _, _) => Ordering::Greater,
-            (Ordering::Less, _, _) => Ordering::Less,
+            (Ordering::Equal, Ordering::Equal, o) => o,
+            (Ordering::Equal, o, _) => o,
+            (o, _, _) => o,
         }
     }
 
@@ -127,5 +141,78 @@ impl Ord for SemVer {
         } else {
             self
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{SemVer, SemVerParseEror};
+    use std::str::FromStr;
+
+    #[test]
+    fn from_str() {
+        assert_eq!(
+            SemVer::from_str("3.45.6").unwrap(),
+            SemVer::new(3, 45, 6, None, None)
+        );
+
+        assert_eq!(
+            SemVer::from_str("3.45.6-beta").unwrap(),
+            SemVer::new(3, 45, 6, Some("beta".to_string()), None)
+        );
+
+        assert_eq!(
+            SemVer::from_str("3.45.6+build123").unwrap(),
+            SemVer::new(3, 45, 6, None, Some("build123".to_string()))
+        );
+
+        assert_eq!(
+            SemVer::from_str("3.45.6-beta+build123").unwrap(),
+            SemVer::new(
+                3,
+                45,
+                6,
+                Some("beta".to_string()),
+                Some("build123".to_string())
+            )
+        );
+
+        assert!(match SemVer::from_str("1.0") {
+            Err(SemVerParseEror::UnparsableSemVer) => true,
+            _ => false,
+        });
+    }
+
+    #[test]
+    fn comparison() {
+        assert!(SemVer::from_str("3.45.6").unwrap() > SemVer::from_str("3.5.6").unwrap());
+        assert!(
+            SemVer::from_str("3.45.6").unwrap() > SemVer::from_str("3.5.6-prerelease").unwrap()
+        );
+        assert!(SemVer::from_str("3.45.7").unwrap() > SemVer::from_str("3.5.6").unwrap());
+        assert!(SemVer::from_str("3.45.7").unwrap() > SemVer::from_str("3.45.6").unwrap());
+        assert!(SemVer::from_str("3.45.7").unwrap() < SemVer::from_str("4.5.6").unwrap());
+        assert!(SemVer::from_str("3.45.7").unwrap() <= SemVer::from_str("4.5.6").unwrap());
+        assert!(SemVer::from_str("3.45.7").unwrap() != SemVer::from_str("4.5.6").unwrap());
+    }
+
+    #[test]
+    fn from_json() {
+        let json_parsed: SemVer = serde_json::from_str(
+            r#"
+        {
+            "major" : 78,
+            "minor" : 123,
+            "patch" : 1,
+            "prerelease" : "beta",
+            "buildmetadata" : "build123"
+        }
+        "#,
+        )
+        .unwrap();
+        assert_eq!(
+            json_parsed,
+            SemVer::from_str("78.123.1-beta+build123").unwrap()
+        );
     }
 }
