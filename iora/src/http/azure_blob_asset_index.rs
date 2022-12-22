@@ -1,4 +1,7 @@
-use crate::{AssetDescriptor, AssetIndex, AssetQuery, ListAssetsError, SemVer};
+use crate::{
+    AssetDescriptor, AssetIndex, AssetQuery, AzureBlobAssetLocatorFactory,
+    AzureBlobStorageDirectAccessLocatorFactory, ListAssetsError, SemVer,
+};
 use quick_xml::de::from_str;
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
@@ -29,19 +32,34 @@ struct Blobs {
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "PascalCase")]
 struct EnumerationResults {
+    service_endpoint: String,
+    container_name: String,
     blobs: Blobs,
     next_marker: NextMarker,
 }
 
 impl EnumerationResults {
-    pub fn evaluate_query(&self, query: &AssetQuery) -> Vec<AssetDescriptor> {
+    pub fn evaluate_query(
+        &self,
+        query: &AssetQuery,
+        locator_factory: &dyn AzureBlobAssetLocatorFactory,
+    ) -> Vec<AssetDescriptor> {
         let mut results: Vec<AssetDescriptor> = vec![];
         for b in self.blobs.blobs.iter() {
             if let Some(m) = &b.metadata {
+                let mut locators = vec![];
+                if let Ok(l) = locator_factory.get_locator(
+                    &self.service_endpoint,
+                    &self.container_name,
+                    &b.name,
+                ) {
+                    locators.push(l);
+                }
                 let ad = AssetDescriptor::new(
                     &m.name,
                     SemVer::from_str(&m.version).unwrap_or_default(),
                     &m.sha1,
+                    locators,
                 );
                 if ad.matches_query(query) {
                     results.push(ad);
@@ -82,6 +100,7 @@ pub struct AzureBlobAssetIndex {
     storage_account_name: String,
     container_name: String,
     sas: String,
+    locator_factory: AzureBlobStorageDirectAccessLocatorFactory,
 }
 
 impl AzureBlobAssetIndex {
@@ -90,6 +109,9 @@ impl AzureBlobAssetIndex {
             storage_account_name: storage_account_name.to_owned(),
             container_name: container_name.to_owned(),
             sas: sas.to_owned(),
+            locator_factory: AzureBlobStorageDirectAccessLocatorFactory {
+                sas_token: sas.to_owned(),
+            },
         }
     }
 
@@ -126,7 +148,9 @@ impl AssetIndex for AzureBlobAssetIndex {
             &self.storage_account_name, &self.container_name, &self.sas
         );
         match Self::make_request(url) {
-            Ok(ListBlobResponse::EnumerationResults(results)) => Ok(results.evaluate_query(query)),
+            Ok(ListBlobResponse::EnumerationResults(results)) => {
+                Ok(results.evaluate_query(query, &self.locator_factory))
+            }
             Ok(ListBlobResponse::Error(e)) => Err(e.into()),
             Err(e) => Err(e),
         }
@@ -135,7 +159,7 @@ impl AssetIndex for AzureBlobAssetIndex {
 
 #[cfg(test)]
 mod tests {
-    use crate::AssetQuery;
+    use crate::{AssetQuery, AzureBlobStorageDirectAccessLocatorFactory};
 
     use super::ListBlobResponse;
     use quick_xml::de::from_str;
@@ -181,7 +205,10 @@ mod tests {
             from_str::<ListBlobResponse>(response).unwrap()
         {
             let query = AssetQuery::new_from_strings("s*", &None).unwrap();
-            let descriptors = results.evaluate_query(&query);
+            let locator_factory = AzureBlobStorageDirectAccessLocatorFactory {
+                sas_token: "sas=tok&v=2022-12-31".to_owned(),
+            };
+            let descriptors = results.evaluate_query(&query, &locator_factory);
             assert_eq!(descriptors.len(), 1);
             let ad = descriptors.first().unwrap();
             assert_eq!(ad.name, "simple_test");
@@ -191,6 +218,11 @@ mod tests {
             assert!(ad.version.prerelease.is_none());
             assert!(ad.version.buildmetadata.is_none());
             assert_eq!(ad.content_hash, "a5dc94e2414b5445ddb4658b047166751f364f4a");
+            assert_eq!(ad.locators.len(), 1);
+            assert_eq!(
+                ad.locators[0].url.as_str(),
+                "https://ioratest.blob.core.windows.net/assets/simple_test/1.0.0/asset.tar.gz?sas=tok&v=2022-12-31"
+            );
         } else {
             panic!("Unexpected parse result");
         }

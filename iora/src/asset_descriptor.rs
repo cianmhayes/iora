@@ -1,18 +1,69 @@
 use crate::{AssetQuery, SemVer};
+use serde::{
+    de::{Deserializer, Visitor},
+    ser::Serializer,
+    Deserialize, Serialize,
+};
+use std::str::FromStr;
 
-#[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct AssetLocator {
+    pub locator_type: String,
+    #[serde(serialize_with = "serialize_uri_to_string")]
+    #[serde(deserialize_with = "deserialize_uri_from_string")]
+    pub url: reqwest::Url,
+}
+
+pub fn serialize_uri_to_string<S>(uri: &reqwest::Url, s: S) -> Result<S::Ok, S::Error>
+where
+    S: Serializer,
+{
+    s.serialize_str(uri.as_str())
+}
+
+pub fn deserialize_uri_from_string<'de, D>(d: D) -> Result<reqwest::Url, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    struct UriVisitor {}
+    impl<'de> Visitor<'de> for UriVisitor {
+        type Value = reqwest::Url;
+        fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+            formatter.write_str("String containing a well formatted Uri.")
+        }
+        fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
+        where
+            E: serde::de::Error,
+        {
+            match reqwest::Url::from_str(v) {
+                Ok(u) => Ok(u),
+                Err(e) => Err(E::custom(e.to_string())),
+            }
+        }
+    }
+    d.deserialize_str(UriVisitor {})
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct AssetDescriptor {
     pub name: String,
     pub version: SemVer,
     pub content_hash: String,
+    pub locators: Vec<AssetLocator>,
 }
 
 impl AssetDescriptor {
-    pub fn new(name: &str, version: SemVer, content_hash: &str) -> Self {
+    pub fn new(
+        name: &str,
+        version: SemVer,
+        content_hash: &str,
+        locators: Vec<AssetLocator>,
+    ) -> Self {
         AssetDescriptor {
             name: name.to_string(),
             version,
             content_hash: content_hash.to_string(),
+            locators,
         }
     }
 
@@ -36,6 +87,7 @@ mod tests {
             name: "asset.name".to_string(),
             version: SemVer::from_str("23.45.678").unwrap(),
             content_hash: "content_hash".to_string(),
+            locators: vec![],
         };
         assert!(ad.matches_query(&NameConstraint::StartsWith("asset".to_string()).into()));
         assert!(!ad.matches_query(&NameConstraint::StartsWith("assert".to_string()).into()));
