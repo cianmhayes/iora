@@ -11,6 +11,8 @@ pub enum ListAssetsError {
     AssetIndexInternalError(String),
     #[error("Failed to execute the query. Details: {details:?}. Query: {query:?}")]
     BadQuery { query: String, details: String },
+    #[error("The index was not configured properly. Details: {0}")]
+    MisconfiguredIndex(String)
 }
 
 pub trait AssetIndex {

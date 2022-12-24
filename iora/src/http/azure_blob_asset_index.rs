@@ -14,9 +14,16 @@ struct Metadata {
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
+struct Properties {
+    #[serde(alias = "Content-Length")]
+    content_length: usize,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "PascalCase")]
 struct Blob {
     name: String,
+    properties: Properties,
     metadata: Option<Metadata>,
 }
 
@@ -59,6 +66,7 @@ impl EnumerationResults {
                     &m.name,
                     SemVer::from_str(&m.version).unwrap_or_default(),
                     &m.sha1,
+                    b.properties.content_length,
                     locators,
                 );
                 if ad.matches_query(query) {
@@ -218,6 +226,7 @@ mod tests {
             assert!(ad.version.prerelease.is_none());
             assert!(ad.version.buildmetadata.is_none());
             assert_eq!(ad.content_hash, "a5dc94e2414b5445ddb4658b047166751f364f4a");
+            assert_eq!(ad.size, 266);
             assert_eq!(ad.locators.len(), 1);
             assert_eq!(
                 ad.locators[0].url.as_str(),

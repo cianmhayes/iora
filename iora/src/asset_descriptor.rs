@@ -8,7 +8,6 @@ use std::str::FromStr;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct AssetLocator {
-    pub locator_type: String,
     #[serde(serialize_with = "serialize_uri_to_string")]
     #[serde(deserialize_with = "deserialize_uri_from_string")]
     pub url: reqwest::Url,
@@ -49,6 +48,7 @@ pub struct AssetDescriptor {
     pub name: String,
     pub version: SemVer,
     pub content_hash: String,
+    pub size: usize,
     pub locators: Vec<AssetLocator>,
 }
 
@@ -57,12 +57,14 @@ impl AssetDescriptor {
         name: &str,
         version: SemVer,
         content_hash: &str,
+        size: usize,
         locators: Vec<AssetLocator>,
     ) -> Self {
         AssetDescriptor {
             name: name.to_string(),
             version,
             content_hash: content_hash.to_string(),
+            size,
             locators,
         }
     }
@@ -83,12 +85,13 @@ mod tests {
 
     #[test]
     fn asset_descriptor_match() {
-        let ad = AssetDescriptor {
-            name: "asset.name".to_string(),
-            version: SemVer::from_str("23.45.678").unwrap(),
-            content_hash: "content_hash".to_string(),
-            locators: vec![],
-        };
+        let ad = AssetDescriptor::new(
+            "asset.name",
+            SemVer::from_str("23.45.678").unwrap(),
+            "content_hash",
+            0,
+            vec![],
+        );
         assert!(ad.matches_query(&NameConstraint::StartsWith("asset".to_string()).into()));
         assert!(!ad.matches_query(&NameConstraint::StartsWith("assert".to_string()).into()));
         assert!(ad.matches_query(

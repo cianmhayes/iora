@@ -49,6 +49,7 @@ impl From<ListAssetsError> for ListAssetsServiceError {
             ListAssetsError::AssetIndexAccessDenied(s) => Self::AssetIndexAccessDenied(s),
             ListAssetsError::BadQuery { query, details } => Self::BadQuery { query, details },
             ListAssetsError::AssetIndexInternalError(s) => Self::AssetIndexInternalError(s),
+            ListAssetsError::MisconfiguredIndex(s) => Self::AssetIndexInternalError(s)
         }
     }
 }

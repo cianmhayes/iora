@@ -32,7 +32,6 @@ impl AzureBlobAssetLocatorFactory for AzureBlobStorageDirectAccessLocatorFactory
         );
         match Url::from_str(&url) {
             Ok(u) => Ok(AssetLocator {
-                locator_type: "AzureBlobStorageDirectAccess".to_owned(),
                 url: u,
             }),
             Err(e) => Err(AzureBlobAssetLocatorFactoryError::FailedToConstructUrl(
