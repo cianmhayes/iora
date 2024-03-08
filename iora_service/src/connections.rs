@@ -2,7 +2,7 @@ use axum::async_trait;
 use bb8::ManageConnection;
 use thiserror::Error;
 
-use iora::AzureBlobAssetIndex;
+use iora::http::AzureBlobAssetIndex;
 
 pub struct IoraServiceState {
     pub asset_index_connection_pool: bb8::Pool<AssetIndexConnectionManager>,
@@ -34,12 +34,12 @@ pub struct AssetIndexConnectionManager {
     pub asset_index_connection_type: AssetIndexConnectionType,
 }
 
-#[derive(Error,Debug)]
+#[derive(Error, Debug)]
 pub enum AssetIndexConnectionError {}
 
 #[async_trait]
 impl ManageConnection for AssetIndexConnectionManager {
-    type Connection = iora::AzureBlobAssetIndex;
+    type Connection = iora::http::AzureBlobAssetIndex;
     type Error = AssetIndexConnectionError;
 
     async fn connect(&self) -> Result<Self::Connection, Self::Error> {

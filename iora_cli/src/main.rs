@@ -1,5 +1,5 @@
 use clap::{Parser, Subcommand};
-use iora::{AssetQuery, ConstraintParsingError, ListAssetsError, AssetStoreError};
+use iora::{AssetQuery, AssetStoreError, ConstraintParsingError, ListAssetsError};
 use std::fs;
 use std::path::PathBuf;
 use std::time::Duration;
@@ -18,7 +18,7 @@ enum IoraCliError {
     #[error("No matching asset available for downloading.")]
     FetchErrorNoMatchingAsset,
     #[error("Query parameters matched multiple assets.")]
-    FetchErrorTooManyMatchingAssets
+    FetchErrorTooManyMatchingAssets,
 }
 
 impl From<ConstraintParsingError> for IoraCliError {
@@ -93,7 +93,11 @@ struct Fetch {
 }
 
 impl Fetch {
-    fn run(&self, catalog: &impl iora::AssetIndex, store: &impl iora::AssetStore) -> Result<(), IoraCliError> {
+    fn run(
+        &self,
+        catalog: &impl iora::AssetIndex,
+        store: &impl iora::AssetStore,
+    ) -> Result<(), IoraCliError> {
         let query = AssetQuery::new_from_strings(&self.name, &self.version)?;
         let results = catalog.list_assets(&query)?;
         if results.is_empty() {
@@ -141,12 +145,15 @@ fn main() {
             return;
         }
     }
-    let catalog = iora::JsonFileAssetIndexCache::new(
+    let catalog = iora::filesystem::JsonFileAssetIndexCache::new(
         &cache_path.join(PathBuf::from("descriptors.json")),
         Duration::from_nanos(1),
-        iora::HttpAssetIndex::new("http://localhost:3000"),
+        iora::http::HttpAssetIndex::new("http://localhost:3000"),
     );
-    let store = match iora::FilesystemAssetStoreCache::new(&cache_path, iora::HttpAsssetStore {}) {
+    let store = match iora::filesystem::FilesystemAssetStoreCache::new(
+        &cache_path,
+        iora::http::HttpAsssetStore {},
+    ) {
         Ok(store) => store,
         Err(e) => {
             print!("Could not configure the asset store: {}", e);

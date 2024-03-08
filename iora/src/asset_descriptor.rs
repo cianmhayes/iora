@@ -13,14 +13,14 @@ pub struct AssetLocator {
     pub url: reqwest::Url,
 }
 
-pub fn serialize_uri_to_string<S>(uri: &reqwest::Url, s: S) -> Result<S::Ok, S::Error>
+fn serialize_uri_to_string<S>(uri: &reqwest::Url, s: S) -> Result<S::Ok, S::Error>
 where
     S: Serializer,
 {
     s.serialize_str(uri.as_str())
 }
 
-pub fn deserialize_uri_from_string<'de, D>(d: D) -> Result<reqwest::Url, D::Error>
+fn deserialize_uri_from_string<'de, D>(d: D) -> Result<reqwest::Url, D::Error>
 where
     D: Deserializer<'de>,
 {

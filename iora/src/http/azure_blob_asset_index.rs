@@ -1,6 +1,6 @@
 use crate::{
-    AssetDescriptor, AssetIndex, AssetQuery, AzureBlobAssetLocatorFactory,
-    AzureBlobStorageDirectAccessLocatorFactory, ListAssetsError, SemVer,
+    http::AzureBlobAssetLocatorFactory, http::AzureBlobStorageDirectAccessLocatorFactory,
+    AssetDescriptor, AssetIndex, AssetQuery, ListAssetsError, SemVer,
 };
 use quick_xml::de::from_str;
 use serde::{Deserialize, Serialize};
@@ -167,7 +167,7 @@ impl AssetIndex for AzureBlobAssetIndex {
 
 #[cfg(test)]
 mod tests {
-    use crate::{AssetQuery, AzureBlobStorageDirectAccessLocatorFactory};
+    use crate::{http::AzureBlobStorageDirectAccessLocatorFactory, AssetQuery};
 
     use super::ListBlobResponse;
     use quick_xml::de::from_str;

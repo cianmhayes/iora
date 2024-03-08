@@ -34,7 +34,7 @@ where
     fn get_local_path_for_descriptor(&self, descriptor: &AssetDescriptor) -> PathBuf {
         self.storage_path
             .join(&descriptor.name)
-            .join(&descriptor.version.to_string())
+            .join(descriptor.version.to_string())
             .join("asset")
     }
 
