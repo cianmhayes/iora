@@ -1,0 +1,7 @@
+[service]
+port = 3000
+
+[asset_index]
+storage_account_name = "ioratest"
+blob_container_name = "assets"
+blob_sas_token = ""
